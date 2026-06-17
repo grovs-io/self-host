@@ -1,0 +1,36 @@
+# Grovs self-hosted reverse proxy.
+# Caddy obtains TLS certs automatically via Let's Encrypt (needs public DNS for
+# each host pointing at this server, ports 80/443 reachable). It forwards
+# X-Forwarded-For by default, so the backend's rate limiting sees real client IPs.
+
+{
+	email {$ACME_EMAIL}
+}
+
+# Dashboard
+{$DASHBOARD_HOST} {
+	reverse_proxy dashboard:3000
+}
+
+# Backend web pool — shared by every backend-facing host (the app routes by subdomain).
+{$API_HOST} {
+	reverse_proxy backend-web-1:3000 backend-web-2:3000
+}
+{$SDK_HOST} {
+	reverse_proxy backend-web-1:3000 backend-web-2:3000
+}
+{$MCP_HOST} {
+	reverse_proxy backend-web-1:3000 backend-web-2:3000
+}
+{$GO_HOST} {
+	reverse_proxy backend-web-1:3000 backend-web-2:3000
+}
+{$LINKS_PROD_HOST} {
+	reverse_proxy backend-web-1:3000 backend-web-2:3000
+}
+{$LINKS_TEST_HOST} {
+	reverse_proxy backend-web-1:3000 backend-web-2:3000
+}
+{$PREVIEW_HOST} {
+	reverse_proxy backend-web-1:3000 backend-web-2:3000
+}

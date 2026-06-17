@@ -1,0 +1,163 @@
+# Grovs self-hosted stack. Requires Docker Compose v2.17+ (dockerfile_inline).
+# Builds the backend from ../backend-public and the dashboard from ../dashboard-public.
+
+# Shared backend image + config. Built once, reused by migrate/web/worker services.
+x-backend: &backend
+  build:
+    context: ./backend
+    dockerfile: Dockerfile.production
+  image: grovs-backend:self-hosted
+  env_file: .env
+  restart: unless-stopped
+
+x-backend-depends: &backend-depends
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+  minio-setup:
+    condition: service_completed_successfully
+
+services:
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - dashboard
+      - backend-web-1
+      - backend-web-2
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    command: ["postgres", "-c", "max_connections=${POSTGRES_MAX_CONNECTIONS}"]
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    restart: unless-stopped
+    env_file: .env
+    command: ["server", "/data", "--console-address", ":9001"]
+    volumes:
+      - minio_data:/data
+
+  # One-shot: wait for MinIO, then create the bucket. Backend waits on this.
+  minio-setup:
+    image: minio/mc
+    restart: "no"
+    env_file: .env
+    depends_on:
+      - minio
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; do
+          echo "waiting for minio..."; sleep 1;
+        done
+        mc mb -p "local/$$AWS_S3_BUCKET" || true
+
+  # One-shot: migrate + seed (creates the React OAuth app + bootstrap admin).
+  backend-migrate:
+    <<: *backend
+    restart: "no"
+    command:
+      - bash
+      - -c
+      - "bundle exec rails db:prepare && bundle exec rails db:seed"
+    depends_on: *backend-depends
+
+  backend-web-1: &backend-web
+    <<: *backend
+    command: ["bundle", "exec", "puma", "-b", "tcp://0.0.0.0:3000"]
+    depends_on:
+      backend-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/localhost/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  backend-web-2:
+    <<: *backend-web
+
+  # Scheduler (singleton — never scale this service) + events + batch.
+  backend-worker-1:
+    <<: *backend
+    command:
+      - bash
+      - -c
+      - |
+        bundle exec sidekiq -C config/sidekiq_scheduler.yml &
+        bundle exec sidekiq -C config/sidekiq_worker.yml &
+        bundle exec sidekiq -C config/sidekiq_batch.yml &
+        wait -n
+    depends_on:
+      backend-migrate:
+        condition: service_completed_successfully
+
+  # Maintenance + device updates.
+  backend-worker-2:
+    <<: *backend
+    command:
+      - bash
+      - -c
+      - |
+        bundle exec sidekiq -C config/sidekiq_maintenance.yml &
+        bundle exec sidekiq -C config/sidekiq_device_updates.yml &
+        wait -n
+    depends_on:
+      backend-migrate:
+        condition: service_completed_successfully
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile.selfhosted
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_API_PATH: ${NEXT_PUBLIC_API_PATH}
+        NEXT_PUBLIC_CLIENT_ID: ${NEXT_PUBLIC_CLIENT_ID}
+        NEXT_PUBLIC_SELF_HOSTED: ${NEXT_PUBLIC_SELF_HOSTED}
+        NEXT_PUBLIC_ENV: ${NEXT_PUBLIC_ENV}
+    image: grovs-dashboard:self-hosted
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      backend-migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pg_data:
+  redis_data:
+  minio_data:
+  caddy_data:
+  caddy_config:
