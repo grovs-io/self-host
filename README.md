@@ -81,7 +81,7 @@ As you add CPU/RAM, raise `WEB_CONCURRENCY`, `RAILS_MAX_THREADS`,
 
 ```bash
 # 1. Clone with submodules
-git clone --recursive https://github.com/grovs-io/self-hosted.git grovs-self-hosted
+git clone --recursive https://github.com/grovs-io/self-host.git grovs-self-hosted
 cd grovs-self-hosted          # (if you forgot --recursive: git submodule update --init)
 
 # 2. Generate secrets (.env) — prints your admin password
