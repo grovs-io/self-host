@@ -1,10 +1,15 @@
 # Grovs self-hosted reverse proxy.
-# Caddy obtains TLS certs automatically via Let's Encrypt (needs public DNS for
-# each host pointing at this server, ports 80/443 reachable). It forwards
-# X-Forwarded-For by default, so the backend's rate limiting sees real client IPs.
+# Fixed hosts get Let's Encrypt certs at startup; per-project link subdomains
+# (e.g. <project>.example.com) get certs issued on demand on first request.
+# Caddy forwards X-Forwarded-For, so the backend's rate limiting sees real IPs.
 
 {
 	email {$ACME_EMAIL}
+	on_demand_tls {
+		# Permissive gate (any host that resolves here). For a hardened setup, use a
+		# wildcard cert via your DNS provider's API instead (see README).
+		ask http://backend-web-1:3000/up
+	}
 }
 
 # Dashboard
@@ -12,25 +17,15 @@
 	reverse_proxy dashboard:3000
 }
 
-# Backend web pool — shared by every backend-facing host (the app routes by subdomain).
-{$API_HOST} {
+# Backend reserved hosts (the app routes by subdomain).
+{$API_HOST}, {$SDK_HOST}, {$MCP_HOST}, {$GO_HOST}, {$LINKS_PROD_HOST}, {$LINKS_TEST_HOST}, {$PREVIEW_HOST} {
 	reverse_proxy backend-web-1:3000 backend-web-2:3000
 }
-{$SDK_HOST} {
-	reverse_proxy backend-web-1:3000 backend-web-2:3000
-}
-{$MCP_HOST} {
-	reverse_proxy backend-web-1:3000 backend-web-2:3000
-}
-{$GO_HOST} {
-	reverse_proxy backend-web-1:3000 backend-web-2:3000
-}
-{$LINKS_PROD_HOST} {
-	reverse_proxy backend-web-1:3000 backend-web-2:3000
-}
-{$LINKS_TEST_HOST} {
-	reverse_proxy backend-web-1:3000 backend-web-2:3000
-}
-{$PREVIEW_HOST} {
+
+# Per-project link subdomains (and any other host on the domain) — certs on demand.
+https:// {
+	tls {
+		on_demand
+	}
 	reverse_proxy backend-web-1:3000 backend-web-2:3000
 }
