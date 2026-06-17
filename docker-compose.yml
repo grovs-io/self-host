@@ -19,8 +19,11 @@ x-backend-depends: &backend-depends
     condition: service_completed_successfully
 
 services:
+  # Standalone reverse proxy + TLS. Skipped on platforms with their own proxy
+  # (e.g. Coolify) — only runs with `--profile standalone`.
   proxy:
     image: caddy:2-alpine
+    profiles: ["standalone"]
     restart: unless-stopped
     env_file: .env
     ports:
