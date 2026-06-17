@@ -77,7 +77,7 @@ As you add CPU/RAM, raise `WEB_CONCURRENCY`, `RAILS_MAX_THREADS`,
 
 ---
 
-## Deploy — Option A: standalone (any VPS)
+## Deploy
 
 ```bash
 # 1. Clone with submodules
@@ -102,48 +102,16 @@ password from step 2. No SMTP or SSO required.
 
 ---
 
-## Deploy — Option B: Coolify
-
-[Coolify](https://coolify.io) provides its own reverse proxy and TLS, so the
-bundled Caddy `proxy` is skipped automatically (it's behind the `standalone`
-profile). You assign domains to services in Coolify instead.
-
-1. **Push this repo** to a Git provider Coolify can read (e.g. your own
-   `self-hosted` repo). Submodules must be reachable.
-2. In Coolify: **+ New → Resource → Docker Compose**, choose your repo/branch.
-   - In the source settings, enable **Git Submodules** (pulls `backend` + `dashboard`).
-   - Compose file: `docker-compose.yml`.
-3. **Environment variables:** open the resource's **Environment Variables**, paste
-   the contents of `.env.example`, and fill in the values. Generate the secrets
-   first by running `./scripts/setup.sh` locally and copying them, or generate your
-   own. Make sure these match:
-   - `NEXT_PUBLIC_CLIENT_ID` = `OAUTH_CLIENT_UID`, `CLIENT_SECRET` = `OAUTH_CLIENT_SECRET`
-   - the password in `DATABASE_URL` = `POSTGRES_PASSWORD`
-   - `AWS_S3_KEY_ID`/`AWS_S3_ACCESS_KEY` = `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`
-   - `NEXT_PUBLIC_API_URL` = `https://<API_HOST>`, `S3_ASSET_PREFIX` = `https://<API_HOST>`
-   > `NEXT_PUBLIC_*` are baked into the dashboard **at build time**, so set them
-   > before the first deploy (changing them later requires a rebuild).
-4. **Domains:** open each service and set its domain(s):
-   - `dashboard` → your `DASHBOARD_HOST`
-   - `backend-web-1` → all seven backend hosts, comma-separated: `API_HOST, SDK_HOST,
-     MCP_HOST, GO_HOST, LINKS_PROD_HOST, LINKS_TEST_HOST, PREVIEW_HOST`
-     (the backend routes by subdomain, so they all target `backend-web-1`).
-
-   Point those DNS records at your Coolify server. Coolify issues TLS automatically.
-5. **Deploy.** Coolify builds the images and runs the stack; `backend-migrate`
-   runs first (migrate + seed), then the web/worker/dashboard services start.
-6. Open `https://<DASHBOARD_HOST>` and log in as the bootstrap admin.
-
----
-
 ## DNS
 
-**You need TWO separate registrable domains — one for production, one for test.**
+**You need at least TWO registrable domains — one for production, one for test —** each
+with its full set of subdomains **plus a wildcard**.
 
-Grovs serves **production** and **test** links from per-project subdomains, and the
-backend distinguishes them by their **registrable domain**. So you must use **two
-separate registrable domains** — one for production, one for test — exactly like the
-hosted service uses `sqd.link` (prod) and `test-sqd.link` (test).
+This is specifically about **serving and accessing your deep links**: every project gets
+its own link subdomain, and Grovs tells a **production** link from a **test** link by its
+**registrable domain** — exactly like the hosted service uses `sqd.link` (prod) and
+`test-sqd.link` (test). The dashboard, API, and SDK all live on the **production** domain;
+the **second (test) domain exists solely to serve test-environment links**.
 
 > ⚠️ **The test domain must NOT be a sub-label of the production domain.**
 > `DOMAIN_TEST=test-links.example.com` (a subdomain of `example.com`) **will not route** —
@@ -151,30 +119,44 @@ hosted service uses `sqd.link` (prod) and `test-sqd.link` (test).
 > + domain `example.com`, so the test project never matches. Use a **distinct
 > registrable domain** such as `example-test.com`.
 
-**Production domain — `DOMAIN_LIVE` (e.g. `example.com`).** Point all of these at your server:
+Create every record below. All are `A` records → your server's **IPv4** (add a matching
+`AAAA` → IPv6 if your host has one). Replace `example.com` / `example-test.com` with your
+own two domains.
 
-| Env var | Example | Serves |
-|---------|---------|--------|
-| `DASHBOARD_HOST` | `dashboard.example.com` | Dashboard UI |
-| `API_HOST` | `api.example.com` | Dashboard API + asset blobs |
-| `SDK_HOST` | `sdk.example.com` | **Mobile/server SDKs** (the SDK `baseURL`) |
-| `MCP_HOST` | `mcp.example.com` | MCP OAuth/API |
-| `GO_HOST` | `go.example.com` | Short-link helper |
-| `LINKS_PROD_HOST` | `links.example.com` | Production links |
-| `PREVIEW_HOST` | `preview.example.com` | Link previews |
-| `*.example.com` (**wildcard**) | `*.example.com` | Per-project **production** link subdomains |
+### Domain 1 — production (`DOMAIN_LIVE`, e.g. `example.com`)
 
-**Test domain — `DOMAIN_TEST` (a _separate_ registrable domain, e.g. `example-test.com`):**
+| Type | Name (host) | Points to | Env var | Serves |
+|------|-------------|-----------|---------|--------|
+| `A` | `dashboard` | server IP | `DASHBOARD_HOST` | Dashboard UI |
+| `A` | `api` | server IP | `API_HOST` | Dashboard API + asset blobs |
+| `A` | `sdk` | server IP | `SDK_HOST` | **Mobile / server SDKs** (the SDK `baseURL`) |
+| `A` | `mcp` | server IP | `MCP_HOST` | MCP OAuth/API |
+| `A` | `go` | server IP | `GO_HOST` | Short-link helper |
+| `A` | `links` | server IP | `LINKS_PROD_HOST` | Production links |
+| `A` | `preview` | server IP | `PREVIEW_HOST` | Link previews |
+| `A` | **`*` (wildcard)** | server IP | — | **Per-project production link subdomains** |
 
-| Env var | Example | Serves |
-|---------|---------|--------|
-| `LINKS_TEST_HOST` | `links.example-test.com` | Test links |
-| `*.example-test.com` (**wildcard**) | `*.example-test.com` | Per-project **test** link subdomains |
+### Domain 2 — test (`DOMAIN_TEST`, a _separate_ registrable domain, e.g. `example-test.com`)
 
-A **wildcard** record on each domain is required — every project gets its own random
-link subdomain. The standalone Caddy proxy issues TLS on demand for those; for reliable
-Universal Links / App Links, prefer a **pre-issued wildcard certificate** (via your DNS
-provider's API) so Apple/Google can fetch the association files without a TLS cold-start.
+| Type | Name (host) | Points to | Env var | Serves |
+|------|-------------|-----------|---------|--------|
+| `A` | `links` | server IP | `LINKS_TEST_HOST` | Test links |
+| `A` | **`*` (wildcard)** | server IP | — | **Per-project test link subdomains** |
+
+The test domain only carries the test **links** — the dashboard, API, and SDK are shared
+(the SDK uses the same `SDK_HOST` with `useTestEnvironment` to pick the environment).
+
+> **The `*` wildcard on each domain is mandatory.** Every project gets its own random
+> link subdomain (e.g. `a1b2c3d4.example.com`); without the wildcard those 404 and can't
+> get a TLS cert.
+>
+> **TLS / Universal Links.** The standalone Caddy proxy issues certs **on demand** for
+> each new subdomain (first hit ≈ a few seconds). For reliable **Universal Links / App
+> Links**, pre-issue a **wildcard certificate** (`*.example.com`, `*.example-test.com`)
+> via your DNS provider's API — otherwise Apple's/Google's association fetcher can time
+> out on the cold-start and cache the failure for ~1 hour. Behind Cloudflare, keep the
+> link records **DNS-only (grey cloud)** so Caddy terminates TLS (or use a Cloudflare
+> Origin cert).
 
 ---
 
@@ -218,10 +200,8 @@ fill in the **hostnames** and **two domains**. Here is what every variable does.
 ### Self-hosted flags
 | Variable | What it does |
 |----------|--------------|
-| `GROVS_SELF_HOSTED` | Master switch — **must be `true`**. Disables Stripe/billing & public sign-ups, turns member invites into copyable links (no SMTP needed), enables ActiveStorage proxy mode. |
+| `GROVS_SELF_HOSTED` | Master switch — **must be `true`**. Disables Stripe/billing & public sign-ups, removes MAU quotas, turns member invites into copyable links (no SMTP needed), enables ActiveStorage proxy mode. |
 | `GROVS_EE` | Enterprise edition (in-app-purchase / revenue features). Leave `false` unless licensed. |
-| `FREE_MAU_COUNT` | Monthly-active-user quota cap. Self-hosted = effectively unlimited (`999999999`). |
-| `FREE_PASS_PROJECT_IDS` | Comma-separated project IDs exempt from quotas. Usually empty. |
 
 ### PostgreSQL
 | Variable | What it does |
@@ -362,6 +342,48 @@ headers against `https://<SDK_HOST>`.
 
 ---
 
+## Branding & link images
+
+Link landing pages and social/link previews pull images from two places: **per-project /
+per-link images you set in the dashboard**, and **fallback defaults** for when a link has
+none. Set both up so links never render blank.
+
+### Default images (env) — so nothing is ever empty
+
+If a project has no app-store icon and a link has no custom preview image, Grovs falls
+back to these. They ship pointing at the Grovs assets; **set your own URLs to rebrand:**
+
+| Variable | Used for |
+|----------|----------|
+| `DEFAULT_LOGO_URL` | App icon on the link landing page when a project has no app-store icon. |
+| `DEFAULT_SOCIAL_PREVIEW_URL` | OG / Twitter card image when a link has no custom preview image. |
+| `DEFAULT_LINK_TITLE` | Default `og:title` for link previews. |
+| `DEFAULT_LINK_SUBTITLE` | Default `og:description` for link previews. |
+
+> ⚠️ **Leave these empty and link pages show a blank icon and social shares render an
+> empty card** (no image, no title) — point them at publicly reachable image URLs. A
+> **1200×630** JPG/PNG works well for the social preview.
+
+### Uploaded images (dashboard) — must be reachable
+
+App icons and per-link preview images you upload in the dashboard are stored in object
+storage (MinIO/S3) and served back through the **API host** in proxy mode. For them to
+appear on link pages and in social previews:
+
+- **`S3_ASSET_PREFIX` must point at your API host** (`https://<API_HOST>`), and that host
+  must be publicly reachable over HTTPS. A wrong `S3_ASSET_PREFIX` is the usual cause of
+  "uploaded image doesn't show".
+- A per-link image set in the dashboard **overrides** the env defaults above.
+
+### Social-preview caching
+
+Facebook, LinkedIn, iMessage, WhatsApp, etc. **cache** OG data aggressively. If a link
+you already shared still looks blank after you fix the image, **re-scrape** it (e.g.
+Facebook's Sharing Debugger) or test with a **fresh** link — the cache won't refresh on
+its own for a while.
+
+---
+
 ## Email (optional)
 
 Email is off by default. The bootstrap admin needs none, and member invites produce
@@ -378,8 +400,6 @@ docker compose --profile standalone build
 docker compose run --rm backend-migrate      # migrate BEFORE restarting web/workers
 docker compose --profile standalone up -d
 ```
-
-On Coolify, bump the submodules in your repo and redeploy.
 
 ## Backups
 
