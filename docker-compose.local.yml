@@ -1,5 +1,4 @@
-# Local trial on one machine, no TLS: docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
-# lvh.me and its subdomains resolve to 127.0.0.1, so the hosts in .env work without DNS.
+# Local trial override: no TLS proxy, ports published on the host.
 services:
   web:
     ports:

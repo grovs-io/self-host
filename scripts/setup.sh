@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Create .env with strong secrets and your domains. Safe to re-run: keeps an existing .env.
-# Non-interactive: GROVS_DOMAIN=acme.com [GROVS_LINKS_DOMAIN=acme.link] [GROVS_TEST_DOMAIN=...] GROVS_ADMIN_EMAIL=you@acme.com ./scripts/setup.sh
-# Local trial: GROVS_DOMAIN=local ./scripts/setup.sh  (GROVS_WEB_PORT / GROVS_DASHBOARD_PORT optional)
+# Writes .env from your domains with generated secrets; GROVS_DOMAIN=local for a trial; keeps an existing .env.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
-# One-command Grovs install:
-#   curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/main/install.sh | bash
-# Downloads the stack files into ./grovs (GROVS_DIR), asks for your domain (or Enter for a
-# local trial on lvh.me), generates secrets, pulls the published images and starts everything,
-# with automatic TLS on a real domain. Point DNS at this host first (README: DNS). Re-run to upgrade.
+# One-command install: curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/main/install.sh | bash
 set -euo pipefail
 
 VERSION="${GROVS_VERSION:-2.3.0}"
 DIR="${GROVS_DIR:-grovs}"
-# Stack files come from main (they only ever target the current release); images are pinned by VERSION.
+# Stack files track main; images are pinned by VERSION.
 BASE="${GROVS_STACK_URL:-https://raw.githubusercontent.com/grovs-io/self-host/main}"
 
 for cmd in docker curl openssl; do

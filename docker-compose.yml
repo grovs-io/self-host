@@ -1,6 +1,4 @@
-# Grovs self-hosted stack: published backend + dashboard images, PostgreSQL, Redis,
-# ClickHouse and (with --profile standalone) a Caddy proxy with automatic TLS.
-# Pin GROVS_VERSION in .env; upgrade with `docker compose pull && docker compose up -d`.
+# Grovs self-hosted stack; --profile standalone adds the Caddy proxy with automatic TLS.
 
 x-backend: &backend
   image: ghcr.io/grovs-io/backend:${GROVS_VERSION:-latest}
