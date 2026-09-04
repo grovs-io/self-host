@@ -1,13 +1,22 @@
-# Grovs self-hosted stack. Requires Docker Compose v2.17+ (dockerfile_inline).
-# Builds the backend from ../backend-public and the dashboard from ../dashboard-public.
+# Grovs self-hosted stack: published backend + dashboard images, PostgreSQL, Redis,
+# ClickHouse and (with --profile standalone) a Caddy proxy with automatic TLS.
+# Pin GROVS_VERSION in .env; upgrade with `docker compose pull && docker compose up -d`.
 
-# Shared backend image + config. Built once, reused by migrate/web/worker services.
 x-backend: &backend
-  build:
-    context: ./backend
-    dockerfile: Dockerfile.production
-  image: grovs-backend:self-hosted
+  image: ghcr.io/grovs-io/backend:${GROVS_VERSION:-latest}
   env_file: .env
+  environment:
+    RAILS_ENV: production
+    RAILS_LOG_TO_STDOUT: "true"
+    RAILS_SERVE_STATIC_FILES: "true"
+    GROVS_SELF_HOSTED: "true"
+    DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    REDIS_URL: redis://redis:6379/0
+    CLICKHOUSE_URL: http://grovs:${CLICKHOUSE_PASSWORD}@clickhouse:8123
+    CLICKHOUSE_DATABASE: grovs_production
+    ACTIVE_STORAGE_SERVICE: ${ACTIVE_STORAGE_SERVICE:-local}
+  volumes:
+    - storage:/app/storage
   restart: unless-stopped
 
 x-backend-depends: &backend-depends
@@ -15,12 +24,11 @@ x-backend-depends: &backend-depends
     condition: service_healthy
   redis:
     condition: service_healthy
-  minio-setup:
-    condition: service_completed_successfully
+  clickhouse:
+    condition: service_healthy
 
 services:
-  # Standalone reverse proxy + TLS. Skipped on platforms with their own proxy
-  # (e.g. Coolify) — only runs with `--profile standalone`.
+  # Reverse proxy + Let's Encrypt. Skip the profile on platforms with their own proxy.
   proxy:
     image: caddy:2-alpine
     profiles: ["standalone"]
@@ -35,21 +43,23 @@ services:
       - caddy_config:/config
     depends_on:
       - dashboard
-      - backend-web-1
-      - backend-web-2
+      - web
 
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
-    env_file: .env
-    command: ["postgres", "-c", "max_connections=${POSTGRES_MAX_CONNECTIONS}"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    command: ["postgres", "-c", "max_connections=${POSTGRES_MAX_CONNECTIONS:-200}"]
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -61,59 +71,49 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
-  minio:
-    image: minio/minio
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.3
     restart: unless-stopped
-    env_file: .env
-    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      CLICKHOUSE_DB: grovs_production
+      CLICKHOUSE_USER: grovs
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
     volumes:
-      - minio_data:/data
+      - clickhouse_data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
 
-  # One-shot: wait for MinIO, then create the bucket. Backend waits on this.
-  minio-setup:
-    image: minio/mc
-    restart: "no"
-    env_file: .env
-    depends_on:
-      - minio
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; do
-          echo "waiting for minio..."; sleep 1;
-        done
-        mc mb -p "local/$$AWS_S3_BUCKET" || true
-
-  # One-shot: migrate + seed (creates the React OAuth app + bootstrap admin).
-  backend-migrate:
+  # One-shot on every start: migrate PostgreSQL and ClickHouse, seed the OAuth app + admin.
+  migrate:
     <<: *backend
     restart: "no"
-    command:
-      - bash
-      - -c
-      - "bundle exec rails db:prepare && bundle exec rails db:seed"
+    command: ["bash", "-c", "bin/rails db:prepare && bin/rails db:seed && bin/rails clickhouse:setup"]
     depends_on: *backend-depends
 
-  backend-web-1: &backend-web
+  web:
     <<: *backend
     command: ["bundle", "exec", "puma", "-b", "tcp://0.0.0.0:3000"]
     depends_on:
-      backend-migrate:
+      migrate:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/localhost/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD", "curl", "-f", "http://localhost:3000/up"]
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 60s
 
-  backend-web-2:
-    <<: *backend-web
-
-  # Scheduler (singleton — never scale this service) + events + batch.
-  backend-worker-1:
+  # Scheduler + events + batch. Singleton: never run more than one replica.
+  worker-1:
     <<: *backend
     command:
       - bash
@@ -124,11 +124,11 @@ services:
         bundle exec sidekiq -C config/sidekiq_batch.yml &
         wait -n
     depends_on:
-      backend-migrate:
-        condition: service_completed_successfully
+      web:
+        condition: service_healthy
 
   # Maintenance + device updates.
-  backend-worker-2:
+  worker-2:
     <<: *backend
     command:
       - bash
@@ -138,29 +138,24 @@ services:
         bundle exec sidekiq -C config/sidekiq_device_updates.yml &
         wait -n
     depends_on:
-      backend-migrate:
-        condition: service_completed_successfully
+      web:
+        condition: service_healthy
 
   dashboard:
-    build:
-      context: ./dashboard
-      dockerfile: Dockerfile.selfhosted
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_API_PATH: ${NEXT_PUBLIC_API_PATH}
-        NEXT_PUBLIC_CLIENT_ID: ${NEXT_PUBLIC_CLIENT_ID}
-        NEXT_PUBLIC_SELF_HOSTED: ${NEXT_PUBLIC_SELF_HOSTED}
-        NEXT_PUBLIC_ENV: ${NEXT_PUBLIC_ENV}
-    image: grovs-dashboard:self-hosted
+    image: ghcr.io/grovs-io/dashboard:${GROVS_VERSION:-latest}
     restart: unless-stopped
-    env_file: .env
+    environment:
+      API_URL: ${SERVER_HOST_PROTOCOL:-https://}${API_HOST}
+      OAUTH_CLIENT_UID: ${OAUTH_CLIENT_UID}
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET}
     depends_on:
-      backend-migrate:
-        condition: service_completed_successfully
+      web:
+        condition: service_healthy
 
 volumes:
   pg_data:
   redis_data:
-  minio_data:
+  clickhouse_data:
+  storage:
   caddy_data:
   caddy_config:

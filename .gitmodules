@@ -1,6 +1,0 @@
-[submodule "backend"]
-	path = backend
-	url = https://github.com/grovs-io/backend
-[submodule "dashboard"]
-	path = dashboard
-	url = https://github.com/grovs-io/dashboard

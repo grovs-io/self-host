@@ -1,20 +1,13 @@
 # Grovs — Self-Hosted
 
 Run your own [Grovs](https://grovs.io) instance — deep linking, attribution, and
-analytics — with Docker Compose. One repo brings up the backend, dashboard,
-PostgreSQL, Redis, MinIO (S3-compatible storage), background workers, and a
-reverse proxy.
+analytics — with Docker Compose. One directory brings up the backend, dashboard,
+PostgreSQL, Redis, ClickHouse, background workers, and a reverse proxy with
+automatic TLS, all from published images.
 
-The application code is pulled from two git submodules:
-
-| Submodule    | Repo                                            |
-|--------------|-------------------------------------------------|
-| `backend/`   | [grovs-io/backend](https://github.com/grovs-io/backend)   |
-| `dashboard/` | [grovs-io/dashboard](https://github.com/grovs-io/dashboard) |
-
-Everything self-hosted is **off by default** in those repos and only activates
-when `GROVS_SELF_HOSTED=true` (backend) / `NEXT_PUBLIC_SELF_HOSTED=true`
-(dashboard) — which this stack sets for you.
+Images: `ghcr.io/grovs-io/backend` and `ghcr.io/grovs-io/dashboard`, released together
+under one version (`GROVS_VERSION`). Source: [grovs-io/backend](https://github.com/grovs-io/backend),
+[grovs-io/dashboard](https://github.com/grovs-io/dashboard).
 
 ---
 
@@ -22,17 +15,21 @@ when `GROVS_SELF_HOSTED=true` (backend) / `NEXT_PUBLIC_SELF_HOSTED=true`
 
 | Service | Description |
 |---------|-------------|
-| `proxy` | Caddy reverse proxy + automatic TLS (standalone only) |
+| `proxy` | Caddy reverse proxy + automatic TLS (standalone profile only) |
 | `postgres` | PostgreSQL 16 |
 | `redis` | Redis 7 (AOF persistence, no eviction) |
-| `minio` (+ `minio-setup`) | S3-compatible object storage + bucket creation |
-| `backend-migrate` | One-shot: DB migrate + seed (creates the OAuth app + your admin) |
-| `backend-web-1`, `backend-web-2` | Rails API (Puma) |
-| `backend-worker-1` | Sidekiq: scheduler + events + batch — **singleton, never scale** |
-| `backend-worker-2` | Sidekiq: maintenance + device updates |
-| `dashboard` | Next.js dashboard |
+| `clickhouse` | ClickHouse 25.3, the analytics and event store |
+| `migrate` | One-shot on every start: migrates PostgreSQL + ClickHouse, seeds the OAuth app + your admin |
+| `web` | Rails API (Puma) |
+| `worker-1` | Sidekiq: scheduler + events + batch — **singleton, never scale** |
+| `worker-2` | Sidekiq: maintenance + device updates |
+| `dashboard` | Next.js dashboard, configured at start from `.env` |
+
+Uploads live in the `storage` volume and are served through the API host; set
+`ACTIVE_STORAGE_SERVICE=amazon` plus the `AWS_S3_*` variables to use S3 instead.
 
 ---
+
 
 ## Prerequisites
 
@@ -46,7 +43,7 @@ when `GROVS_SELF_HOSTED=true` (backend) / `NEXT_PUBLIC_SELF_HOSTED=true`
 ## Capacity & scaling
 
 This single-host Docker Compose stack runs the **entire platform on one machine**
-(PostgreSQL, Redis, MinIO, two web replicas, two worker replicas, dashboard, proxy). On
+(PostgreSQL, Redis, ClickHouse, web, two workers, dashboard, proxy). On
 the recommended hardware below it comfortably handles a deep-linking / attribution
 workload of roughly **150,000–200,000 monthly users**.
 
@@ -67,7 +64,7 @@ Tested baseline (what this guide is validated on):
 | Provider | Hetzner Cloud (any VPS or bare-metal works) |
 | Type | **CX33-class** (shared vCPU) or better |
 | CPU / RAM | **4 vCPU / 8 GB RAM** floor — 8 vCPU / 16 GB for headroom |
-| Disk | **80 GB+ SSD** (Postgres + MinIO uploads grow over time) |
+| Disk | **80 GB+ SSD** (PostgreSQL, ClickHouse and uploads grow over time) |
 | OS | Ubuntu 22.04 / 24.04 LTS with Docker + Compose v2 |
 | Network | Public IPv4, ports **80 + 443** open, wildcard DNS `*.yourdomain` |
 
@@ -79,28 +76,28 @@ As you add CPU/RAM, raise `WEB_CONCURRENCY`, `RAILS_MAX_THREADS`,
 
 ## Deploy
 
+One command, once DNS points at the host (see [DNS](#dns)):
+
 ```bash
-# 1. Clone with submodules
-git clone --recursive https://github.com/grovs-io/self-host.git grovs-self-hosted
-cd grovs-self-hosted          # (if you forgot --recursive: git submodule update --init)
-
-# 2. Generate secrets (.env) — prints your admin password
-./scripts/setup.sh
-
-# 3. Set your domains
-$EDITOR .env
-#   set every *_HOST, ACME_EMAIL, BOOTSTRAP_ADMIN_EMAIL
-#   set SERVER_HOST / REACT_HOST / S3_ASSET_PREFIX to your API + dashboard hosts
-
-# 4. Build and start (the proxy runs only with the 'standalone' profile)
-docker compose --profile standalone build
-docker compose --profile standalone up -d
+curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/main/install.sh | bash
 ```
 
-Open `https://<DASHBOARD_HOST>` and log in with `BOOTSTRAP_ADMIN_EMAIL` + the
-password from step 2. No SMTP or SSO required.
+It downloads the stack into `./grovs`, asks for your production domain, test domain
+and admin email, generates every secret, pulls the images and starts the stack with
+the `standalone` proxy. Read [install.sh](install.sh) first if you prefer; the manual
+equivalent is:
+
+```bash
+git clone https://github.com/grovs-io/self-host.git grovs && cd grovs
+./scripts/setup.sh                              # writes .env: domains + secrets, prints your admin password
+docker compose --profile standalone up -d       # drop the profile on platforms with their own proxy
+```
+
+Open `https://<DASHBOARD_HOST>` and log in with the admin email + password printed by
+setup. No SMTP or SSO required. Certificates are issued on the first request to each host.
 
 ---
+
 
 ## DNS
 
@@ -223,15 +220,18 @@ fill in the **hostnames** and **two domains**. Here is what every variable does.
 | `RAILS_DB_POOL` | DB connection pool per process. |
 | `SIDEKIQ_EVENTS_CONCURRENCY` | Threads for the events worker. |
 
-### Object storage (bundled MinIO, or your S3)
+### Uploads
 | Variable | What it does |
 |----------|--------------|
-| `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` | Admin credentials for the bundled MinIO. |
-| `AWS_S3_KEY_ID` / `AWS_S3_ACCESS_KEY` | S3 credentials — **must equal the MinIO creds** for the bundled setup (or your AWS keys). |
-| `AWS_S3_REGION` / `AWS_S3_BUCKET` | Region + bucket name. |
-| `S3_ENDPOINT` | S3 endpoint. `http://minio:9000` for bundled MinIO; leave **empty** for real AWS S3. |
-| `S3_FORCE_PATH_STYLE` | `true` for MinIO (path-style URLs). |
-| `S3_ASSET_PREFIX` | Public URL prefix for blobs — point at `https://<API_HOST>` (proxy mode serves them through the backend). |
+| `ACTIVE_STORAGE_SERVICE` | `local` (default) keeps uploads in the `storage` volume; `amazon` uses S3 with the `AWS_S3_*` variables (`S3_ENDPOINT` + `S3_FORCE_PATH_STYLE=true` for S3-compatible stores). |
+| `S3_ASSET_PREFIX` | Public URL prefix for uploads — `https://<API_HOST>`; they are served through the backend. |
+
+### ClickHouse
+| Variable | What it does |
+|----------|--------------|
+| `CLICKHOUSE_PASSWORD` | Password of the `grovs` ClickHouse user (generated by setup). |
+| `CLICKHOUSE_*_ENABLED`, `CLICKHOUSE_PRIMARY`, `CLICKHOUSE_ROLLUP_FAST_LANE`, `REVENUE_READS_FROM_LEDGER`, `PG_SHADOW_WRITES` | ClickHouse is the event store and serves every analytics read; PostgreSQL keeps a spill fallback only. Leave them as shipped. |
+
 
 ### Rails core & secrets
 | Variable | What it does |
@@ -252,7 +252,7 @@ fill in the **hostnames** and **two domains**. Here is what every variable does.
 ### Link & redirect hosts (the two domains)
 | Variable | What it does |
 |----------|--------------|
-| `SERVER_HOST_PROTOCOL` / `SERVER_HOST` | Protocol + host the backend uses to build absolute URLs — your API host. |
+| `SERVER_HOST_PROTOCOL` / `SERVER_HOST` | Protocol + the bare production domain (`example.com`); the `api.`/`sdk.`/`go.`/`preview.` hosts derive from it. Never the `api.` host itself: boot refuses it. |
 | `REACT_HOST_PROTOCOL` / `REACT_HOST` | Protocol + host for dashboard links (e.g. in emails) — your dashboard host. |
 | `DOMAIN_LIVE` | **Production base / registrable domain** (e.g. `example.com`) — **NOT a subdomain**. All reserved hosts and per-project prod link subdomains are children of it; routing only works when this is the registrable base. |
 | `DOMAIN_TEST` | **Test base domain — a _separate_ registrable domain** (e.g. `example-test.com`). ⚠️ Must **not** be a sub-label of `DOMAIN_LIVE` (e.g. `test-links.example.com`), or test links won't route. |
@@ -262,19 +262,13 @@ fill in the **hostnames** and **two domains**. Here is what every variable does.
 ### OAuth (dashboard login)
 | Variable | What it does |
 |----------|--------------|
-| `OAUTH_CLIENT_UID` / `OAUTH_CLIENT_SECRET` | Doorkeeper "React" app credentials; the seed upserts the app to these. |
-| `NEXT_PUBLIC_CLIENT_ID` | **Must equal `OAUTH_CLIENT_UID`.** Baked into the dashboard at build time. |
-| `CLIENT_SECRET` | **Must equal `OAUTH_CLIENT_SECRET`.** Used by the dashboard's server-side token route. |
+| `OAUTH_CLIENT_UID` / `OAUTH_CLIENT_SECRET` | Doorkeeper "React" app credentials. The seed upserts the app to them and the dashboard reads the same pair at start. |
 
-### Dashboard (baked at build time)
-> These `NEXT_PUBLIC_*` values are compiled **into the dashboard image** — changing them later requires a rebuild.
 
-| Variable | What it does |
-|----------|--------------|
-| `NEXT_PUBLIC_API_URL` | `https://<API_HOST>` — where the dashboard calls the API. |
-| `NEXT_PUBLIC_API_PATH` | API path prefix, `/api/v1`. |
-| `NEXT_PUBLIC_ENV` | `production`. |
-| `NEXT_PUBLIC_SELF_HOSTED` | `true` — hides SaaS-only/billing UI, enables the invite-link flow. |
+### Dashboard
+The dashboard image is generic: `docker-compose.yml` hands it `API_URL` (from `API_HOST`)
+and the OAuth pair at start. Nothing is baked in, so upgrading is pulling a new image.
+
 
 ### First-run admin
 | Variable | What it does |
@@ -367,7 +361,7 @@ back to these. They ship pointing at the Grovs assets; **set your own URLs to re
 ### Uploaded images (dashboard) — must be reachable
 
 App icons and per-link preview images you upload in the dashboard are stored in object
-storage (MinIO/S3) and served back through the **API host** in proxy mode. For them to
+storage (the `storage` volume or S3) and served back through the **API host** in proxy mode. For them to
 appear on link pages and in social previews:
 
 - **`S3_ASSET_PREFIX` must point at your API host** (`https://<API_HOST>`), and that host
@@ -395,15 +389,18 @@ vars only if you want **password reset** or **data-export** emails.
 ## Upgrades
 
 ```bash
-git submodule update --remote --merge        # pull latest backend + dashboard
-docker compose --profile standalone build
-docker compose run --rm backend-migrate      # migrate BEFORE restarting web/workers
-docker compose --profile standalone up -d
+# bump GROVS_VERSION in .env, then
+docker compose --profile standalone pull
+docker compose --profile standalone up -d     # migrate runs first, web and workers restart on the new image
 ```
+
+Or re-run `install.sh` with `GROVS_VERSION=<new>`; it keeps your `.env`.
+
 
 ## Backups
 
 Durable state lives in named volumes:
-- **`pg_data`** — the system of record. Back it up (`pg_dump` off-box / volume snapshots).
-- **`minio_data`** — uploaded assets and exports (`mc mirror` or snapshot).
+- **`pg_data`** — the system of record: projects, links, users, purchases. Back it up (`pg_dump` off-box or volume snapshots).
+- **`clickhouse_data`** — events and analytics. Snapshot the volume or use `clickhouse-backup`.
+- **`storage`** — uploaded images and exports.
 - **`redis_data`** — AOF; only undrained events are at risk.

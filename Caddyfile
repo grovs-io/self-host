@@ -8,7 +8,7 @@
 	on_demand_tls {
 		# Permissive gate (any host that resolves here). For a hardened setup, use a
 		# wildcard cert via your DNS provider's API instead (see README).
-		ask http://backend-web-1:3000/up
+		ask http://web:3000/up
 	}
 }
 
@@ -19,7 +19,7 @@
 
 # Backend reserved hosts (the app routes by subdomain).
 {$API_HOST}, {$SDK_HOST}, {$MCP_HOST}, {$GO_HOST}, {$LINKS_PROD_HOST}, {$LINKS_TEST_HOST}, {$PREVIEW_HOST} {
-	reverse_proxy backend-web-1:3000 backend-web-2:3000
+	reverse_proxy web:3000
 }
 
 # Per-project link subdomains (and any other host on the domain) — certs on demand.
@@ -27,5 +27,5 @@ https:// {
 	tls {
 		on_demand
 	}
-	reverse_proxy backend-web-1:3000 backend-web-2:3000
+	reverse_proxy web:3000
 }
