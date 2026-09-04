@@ -152,6 +152,60 @@ With one domain for everything that is the six fixed hosts plus `*` and `*.test`
 
 ---
 
+## After install: changing settings
+
+Everything is configured by `.env` in the install directory (`./grovs`). Edit it, then apply:
+
+```bash
+docker compose --profile standalone up -d                                   # real domain
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d      # local trial
+```
+
+Compose restarts only the containers whose environment changed; the database, uploads and
+analytics stay. Two rules: never change the generated secrets (`SECRET_KEY_BASE`, the
+`ACTIVE_RECORD_ENCRYPTION_*` keys, the database and ClickHouse passwords) after the first
+start, the existing data is bound to them; and if you change a domain, update DNS first.
+
+### Optional features
+
+Off by default. Each is a few lines in `.env` followed by the `up -d` above.
+
+**Custom domains** let a project serve links on a domain your customer owns
+(`links.customer.com`) instead of `<project>.<links domain>`:
+
+```
+CUSTOM_DOMAINS_ENABLED=true
+CUSTOM_DOMAINS_PROVIDER=manual
+SELF_HOSTED_INGRESS_HOST=links.acme.link     # the host customers point their CNAME at; defaults to SERVER_HOST
+```
+
+Then, per domain: the customer creates `CNAME links.customer.com → <SELF_HOSTED_INGRESS_HOST>`,
+an admin adds the domain on the project's Domain page, and Grovs verifies it within a minute
+by probing `https://links.customer.com/.well-known/grovs-domain-verification`. The bundled
+proxy issues the certificate on that first request; behind your own proxy, attach a
+certificate for the host before the customer flips DNS.
+
+**Migrate from Branch or AppsFlyer** resolves an old short link upstream on its first click,
+creates the equivalent Grovs link, and redirects; later clicks never touch the old provider:
+
+```
+MIGRATIONS_ENABLED=true
+```
+
+Then set the migration up on the project's Domain page with the provider credentials. Custom
+domains must be enabled too when the old links live on a domain you will point at Grovs.
+
+**Email** for invites, password resets and exports: fill in the `SMTP_*` block and set
+`MAILER_DELIVERY_METHOD=smtp`. Without it, admins invite members with a copyable link.
+
+**Uploads on S3** instead of the local volume: `ACTIVE_STORAGE_SERVICE=amazon` plus the
+`AWS_S3_*` variables (and `S3_ENDPOINT` + `S3_FORCE_PATH_STYLE=true` for S3-compatible stores).
+
+**Analytics on the first minute.** A fresh install shows "Analytics temporarily unavailable"
+until the first rollup run completes, about a minute after boot. Reload.
+
+---
+
 ## Verify your deployment
 
 ```bash
