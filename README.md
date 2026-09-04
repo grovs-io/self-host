@@ -81,8 +81,8 @@ One command, once DNS points at the host (see [DNS](#dns)):
 curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/main/install.sh | bash
 ```
 
-It downloads the stack into `./grovs`, asks for your domain and admin email (the test
-domain defaults to `test.<domain>`), generates every secret, pulls the images and starts the stack with
+It downloads the stack into `./grovs`, asks for your app domain, links domain, test links
+domain and admin email (Enter accepts each default, see [DNS](#dns)), generates every secret, pulls the images and starts the stack with
 the `standalone` proxy. Read [install.sh](install.sh) first if you prefer; the manual
 equivalent is:
 
@@ -98,32 +98,54 @@ setup. No SMTP or SSO required. Certificates are issued on the first request to 
 ---
 
 
+## Try it on your machine first
+
+No domain, no DNS, no TLS. Run the installer and press Enter at the first prompt:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/main/install.sh | bash
+```
+
+It starts the same stack on `lvh.me`, a public name that resolves to `127.0.0.1`, with the
+dashboard at `http://dashboard.lvh.me:3002` and the API at `http://api.lvh.me`. Log in with
+the printed admin password, create a project and a link, open it. Real deep links into apps
+need a real domain, everything else works. Change the ports with `GROVS_WEB_PORT` and
+`GROVS_DASHBOARD_PORT` before running it. Remove it with
+`docker compose -f docker-compose.yml -f docker-compose.local.yml down -v` in the install dir.
+
+Works on Linux and macOS with Docker, and on Windows through WSL2 with Docker Desktop.
+
+---
+
 ## DNS
 
-Everything runs under **one domain** (`DOMAIN_LIVE`, e.g. `example.com`). Every project
-gets its own link subdomain, and test-environment links live under `test.<domain>`
-(`DOMAIN_TEST`), so you need the fixed hosts plus **two wildcards**. All records are `A`
-records → your server's IPv4 (add matching `AAAA` records if it has IPv6).
+Grovs uses up to three domains, and the installer asks for them in this order, each with a
+default you can accept by pressing Enter:
 
-| Type | Name (host) | Env var | Serves |
-|------|-------------|---------|--------|
-| `A` | `dashboard` | `DASHBOARD_HOST` | Dashboard UI |
-| `A` | `api` | `API_HOST` | Dashboard API + uploaded images |
-| `A` | `sdk` | `SDK_HOST` | **Mobile / server SDKs** (the SDK `baseURL`) |
-| `A` | `mcp` | `MCP_HOST` | MCP OAuth/API |
-| `A` | `go` | `GO_HOST` | Short-link helper |
-| `A` | `links` | `LINKS_PROD_HOST` | Production links |
-| `A` | `preview` | `PREVIEW_HOST` | Link previews |
-| `A` | **`*`** | — | **Per-project production link subdomains** (`a1b2c3d4.example.com`) |
-| `A` | **`*.test`** | — | **Per-project test link subdomains** (`a1b2c3d4.test.example.com`) |
+| Prompt | Env | What lives there | Default |
+|--------|-----|------------------|---------|
+| App domain | `SERVER_HOST` | `dashboard.`, `api.`, `sdk.`, `go.`, `mcp.`, `preview.` | local trial on `lvh.me` |
+| Links domain | `DOMAIN_LIVE` | production links: `<project>.<links domain>` | the app domain |
+| Test links domain | `DOMAIN_TEST` | test-environment links | `test.<links domain>` |
 
-With most DNS providers that is nine records, or two if you point `*` and `*.test` and
-skip the named ones (the wildcard covers them). A separate registrable domain for test
-links also works: set `DOMAIN_TEST` and `LINKS_TEST_HOST` to it.
+A branded short domain for links (`acme.link`) next to the company domain for the app
+(`acme.com`) is the usual setup; one domain for everything also works.
+
+All records are `A` records → your server's IPv4 (add matching `AAAA` if it has IPv6):
+
+| Domain | Name (host) | Serves |
+|--------|-------------|--------|
+| app | `dashboard`, `api`, `sdk`, `go`, `mcp`, `preview` | the fixed hosts above |
+| links | **`*`** (wildcard) | per-project production links, e.g. `a1b2c3d4.acme.link` |
+| links | `links` | `LINKS_PROD_HOST`, pre-issued certificate |
+| test links | **`*`** (wildcard) | per-project test links, e.g. `a1b2c3d4.test.acme.link` |
+| test links | `links` | `LINKS_TEST_HOST`, pre-issued certificate |
+
+With one domain for everything that is the six fixed hosts plus `*` and `*.test` on it.
 
 > **TLS / Universal Links.** The standalone Caddy proxy issues certificates **on demand**
 > for each new subdomain (first hit takes a few seconds). For reliable **Universal Links /
-> App Links**, pre-issue wildcard certificates (`*.example.com`, `*.test.example.com`) via
+> App Links**, pre-issue wildcard certificates for the links and test-links domains via
 > your DNS provider's API; otherwise Apple's/Google's association fetcher can time out on
 > the cold start and cache the failure for about an hour. Behind Cloudflare, keep the link
 > records **DNS-only (grey cloud)** so Caddy terminates TLS, or use a Cloudflare Origin cert.
