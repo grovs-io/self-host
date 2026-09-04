@@ -228,7 +228,7 @@ fill in the **hostnames** and **two domains**. Here is what every variable does.
 | `SERVER_HOST_PROTOCOL` / `SERVER_HOST` | Protocol + the bare production domain (`example.com`); the `api.`/`sdk.`/`go.`/`preview.` hosts derive from it. Never the `api.` host itself: boot refuses it. |
 | `REACT_HOST_PROTOCOL` / `REACT_HOST` | Protocol + host for dashboard links (e.g. in emails) — your dashboard host. |
 | `DOMAIN_LIVE` | **Production base / registrable domain** (e.g. `example.com`) — **NOT a subdomain**. All reserved hosts and per-project prod link subdomains are children of it; routing only works when this is the registrable base. |
-| `DOMAIN_TEST` | **Test base domain — a _separate_ registrable domain** (e.g. `example-test.com`). ⚠️ Must **not** be a sub-label of `DOMAIN_LIVE` (e.g. `test-links.example.com`), or test links won't route. |
+| `DOMAIN_TEST` | Base domain for test-environment links, `test.<DOMAIN_LIVE>` by default. A separate registrable domain also works. |
 | `PREVIEW_BASE_URL` | Full URL of the preview host. |
 | `MCP_CONSENT_URL` | OAuth consent URL for MCP. |
 
