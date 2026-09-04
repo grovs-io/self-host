@@ -33,9 +33,8 @@ Uploads live in the `storage` volume and are served through the API host; set
 
 ## Prerequisites
 
-- A Linux host with **Docker + Docker Compose v2**.
-- **Two registrable domains** (production + test) with the reserved-host and **wildcard**
-  records pointing at the host (see [DNS](#dns)), ports 80/443 open.
+- A Linux host with **Docker + Docker Compose v2**, ports 80/443 open.
+- **One domain** you control, with the records in [DNS](#dns) pointing at the host.
 - About **4 vCPU / 8 GB RAM** is a comfortable floor.
 
 ---
@@ -82,8 +81,8 @@ One command, once DNS points at the host (see [DNS](#dns)):
 curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/main/install.sh | bash
 ```
 
-It downloads the stack into `./grovs`, asks for your production domain, test domain
-and admin email, generates every secret, pulls the images and starts the stack with
+It downloads the stack into `./grovs`, asks for your domain and admin email (the test
+domain defaults to `test.<domain>`), generates every secret, pulls the images and starts the stack with
 the `standalone` proxy. Read [install.sh](install.sh) first if you prefer; the manual
 equivalent is:
 
@@ -101,59 +100,33 @@ setup. No SMTP or SSO required. Certificates are issued on the first request to 
 
 ## DNS
 
-**You need at least TWO registrable domains — one for production, one for test —** each
-with its full set of subdomains **plus a wildcard**.
+Everything runs under **one domain** (`DOMAIN_LIVE`, e.g. `example.com`). Every project
+gets its own link subdomain, and test-environment links live under `test.<domain>`
+(`DOMAIN_TEST`), so you need the fixed hosts plus **two wildcards**. All records are `A`
+records → your server's IPv4 (add matching `AAAA` records if it has IPv6).
 
-This is specifically about **serving and accessing your deep links**: every project gets
-its own link subdomain, and Grovs tells a **production** link from a **test** link by its
-**registrable domain** — exactly like the hosted service uses `sqd.link` (prod) and
-`test-sqd.link` (test). The dashboard, API, and SDK all live on the **production** domain;
-the **second (test) domain exists solely to serve test-environment links**.
+| Type | Name (host) | Env var | Serves |
+|------|-------------|---------|--------|
+| `A` | `dashboard` | `DASHBOARD_HOST` | Dashboard UI |
+| `A` | `api` | `API_HOST` | Dashboard API + uploaded images |
+| `A` | `sdk` | `SDK_HOST` | **Mobile / server SDKs** (the SDK `baseURL`) |
+| `A` | `mcp` | `MCP_HOST` | MCP OAuth/API |
+| `A` | `go` | `GO_HOST` | Short-link helper |
+| `A` | `links` | `LINKS_PROD_HOST` | Production links |
+| `A` | `preview` | `PREVIEW_HOST` | Link previews |
+| `A` | **`*`** | — | **Per-project production link subdomains** (`a1b2c3d4.example.com`) |
+| `A` | **`*.test`** | — | **Per-project test link subdomains** (`a1b2c3d4.test.example.com`) |
 
-> ⚠️ **The test domain must NOT be a sub-label of the production domain.**
-> `DOMAIN_TEST=test-links.example.com` (a subdomain of `example.com`) **will not route** —
-> the host parser splits `proj.test-links.example.com` into subdomain `proj.test-links`
-> + domain `example.com`, so the test project never matches. Use a **distinct
-> registrable domain** such as `example-test.com`.
+With most DNS providers that is nine records, or two if you point `*` and `*.test` and
+skip the named ones (the wildcard covers them). A separate registrable domain for test
+links also works: set `DOMAIN_TEST` and `LINKS_TEST_HOST` to it.
 
-Create every record below. All are `A` records → your server's **IPv4** (add a matching
-`AAAA` → IPv6 if your host has one). Replace `example.com` / `example-test.com` with your
-own two domains.
-
-### Domain 1 — production (`DOMAIN_LIVE`, e.g. `example.com`)
-
-| Type | Name (host) | Points to | Env var | Serves |
-|------|-------------|-----------|---------|--------|
-| `A` | `dashboard` | server IP | `DASHBOARD_HOST` | Dashboard UI |
-| `A` | `api` | server IP | `API_HOST` | Dashboard API + asset blobs |
-| `A` | `sdk` | server IP | `SDK_HOST` | **Mobile / server SDKs** (the SDK `baseURL`) |
-| `A` | `mcp` | server IP | `MCP_HOST` | MCP OAuth/API |
-| `A` | `go` | server IP | `GO_HOST` | Short-link helper |
-| `A` | `links` | server IP | `LINKS_PROD_HOST` | Production links |
-| `A` | `preview` | server IP | `PREVIEW_HOST` | Link previews |
-| `A` | **`*` (wildcard)** | server IP | — | **Per-project production link subdomains** |
-
-### Domain 2 — test (`DOMAIN_TEST`, a _separate_ registrable domain, e.g. `example-test.com`)
-
-| Type | Name (host) | Points to | Env var | Serves |
-|------|-------------|-----------|---------|--------|
-| `A` | `links` | server IP | `LINKS_TEST_HOST` | Test links |
-| `A` | **`*` (wildcard)** | server IP | — | **Per-project test link subdomains** |
-
-The test domain only carries the test **links** — the dashboard, API, and SDK are shared
-(the SDK uses the same `SDK_HOST` with `useTestEnvironment` to pick the environment).
-
-> **The `*` wildcard on each domain is mandatory.** Every project gets its own random
-> link subdomain (e.g. `a1b2c3d4.example.com`); without the wildcard those 404 and can't
-> get a TLS cert.
->
-> **TLS / Universal Links.** The standalone Caddy proxy issues certs **on demand** for
-> each new subdomain (first hit ≈ a few seconds). For reliable **Universal Links / App
-> Links**, pre-issue a **wildcard certificate** (`*.example.com`, `*.example-test.com`)
-> via your DNS provider's API — otherwise Apple's/Google's association fetcher can time
-> out on the cold-start and cache the failure for ~1 hour. Behind Cloudflare, keep the
-> link records **DNS-only (grey cloud)** so Caddy terminates TLS (or use a Cloudflare
-> Origin cert).
+> **TLS / Universal Links.** The standalone Caddy proxy issues certificates **on demand**
+> for each new subdomain (first hit takes a few seconds). For reliable **Universal Links /
+> App Links**, pre-issue wildcard certificates (`*.example.com`, `*.test.example.com`) via
+> your DNS provider's API; otherwise Apple's/Google's association fetcher can time out on
+> the cold start and cache the failure for about an hour. Behind Cloudflare, keep the link
+> records **DNS-only (grey cloud)** so Caddy terminates TLS, or use a Cloudflare Origin cert.
 
 ---
 

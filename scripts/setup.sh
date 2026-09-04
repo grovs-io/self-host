@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Create .env with strong secrets and your domains. Safe to re-run: keeps an existing .env.
-# Non-interactive: GROVS_DOMAIN=example.com GROVS_TEST_DOMAIN=example-test.com GROVS_ADMIN_EMAIL=you@example.com ./scripts/setup.sh
+# Non-interactive: GROVS_DOMAIN=example.com GROVS_ADMIN_EMAIL=you@example.com ./scripts/setup.sh  (GROVS_TEST_DOMAIN optional)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -25,8 +25,8 @@ ask() {
   fi
 }
 
-ask GROVS_DOMAIN "Production domain (links and API hosts live under it)" example.com
-ask GROVS_TEST_DOMAIN "Test domain (a separate registrable domain)" "example-test.com"
+ask GROVS_DOMAIN "Your domain (dashboard, API and links live under it)" example.com
+ask GROVS_TEST_DOMAIN "Test-environment domain (Enter for the default)" "test.${GROVS_DOMAIN}"
 ask GROVS_ADMIN_EMAIL "Admin email (first login, Let's Encrypt account)" "admin@${GROVS_DOMAIN}"
 
 D="$GROVS_DOMAIN"; T="$GROVS_TEST_DOMAIN"
