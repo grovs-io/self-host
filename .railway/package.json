@@ -1,0 +1,9 @@
+{
+  "name": "grovs-railway-deployment",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {"check": "tsc --noEmit", "test": "node --experimental-strip-types test.mjs"},
+  "dependencies": {"railway": "3.11.0"},
+  "devDependencies": {"@types/node": "^22.0.0", "typescript": "^5.9.0"}
+}

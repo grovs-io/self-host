@@ -9,6 +9,31 @@ Images: `ghcr.io/grovs-io/backend` and `ghcr.io/grovs-io/dashboard`, released to
 under one version (`GROVS_VERSION`). Source: [grovs-io/backend](https://github.com/grovs-io/backend),
 [grovs-io/dashboard](https://github.com/grovs-io/dashboard).
 
+## Run it yourself
+
+**Try Grovs on your laptop or deploy the Community Edition in your own account.**
+The setup generates your secrets and administrator login. You do not need to
+build the application or configure SMTP to sign in.
+
+| Deployment | Start here |
+|---|---|
+| Try locally — no public domain needed | [Local Docker quickstart](docs/deploy/local.md) |
+| Your own Linux server | [Docker Compose guide](docs/deploy/server.md) |
+| Existing Coolify server | [Deploy with Coolify](docs/deploy/coolify.md) |
+| Existing Dokploy server | [Deploy with Dokploy](docs/deploy/dokploy.md) |
+| AWS account | [Launch with CloudFormation](docs/deploy/aws.md) |
+| Google Cloud project | [Open the Cloud Shell deployment](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host&cloudshell_tutorial=deploy%2Fgcp%2Ftutorial.md) · [Guide](docs/deploy/gcp.md) |
+| Railway project | [Deploy with Railway IaC](docs/deploy/railway.md) |
+| Render account | [Deploy on Render](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host) · [Guide](docs/deploy/render.md) |
+
+Coolify/Dokploy use an importable Compose template; their guides include the
+wildcard routing and TLS setup needed for project links. Cloud deployments
+create billable resources in your account. See [deployment options](docs/deploy/README.md) before choosing.
+
+Already installed? Jump to [configuration](#after-install-changing-settings),
+[SDK setup](#configure-the-sdks), [upgrades](#upgrades), [backups](#backups), or
+[troubleshooting](docs/deploy/troubleshooting.md).
+
 ---
 
 ## What runs
@@ -19,7 +44,7 @@ under one version (`GROVS_VERSION`). Source: [grovs-io/backend](https://github.c
 | `postgres` | PostgreSQL 16 |
 | `redis` | Redis 7 (AOF persistence, no eviction) |
 | `clickhouse` | ClickHouse 25.3, the analytics and event store |
-| `migrate` | One-shot on every start: migrates PostgreSQL + ClickHouse, seeds the OAuth app + your admin |
+| `migrate` | One-shot initialization: migrates PostgreSQL + ClickHouse, seeds the OAuth app + your admin |
 | `web` | Rails API (Puma) |
 | `worker-1` | Sidekiq: scheduler + events + batch — **singleton, never scale** |
 | `worker-2` | Sidekiq: maintenance + device updates |
@@ -39,37 +64,13 @@ Uploads live in the `storage` volume and are served through the API host; set
 
 ---
 
-## Capacity & scaling
+## Capacity
 
-This single-host Docker Compose stack runs the **entire platform on one machine**
-(PostgreSQL, Redis, ClickHouse, web, two workers, dashboard, proxy). On
-the recommended hardware below it comfortably handles a deep-linking / attribution
-workload of roughly **150,000–200,000 monthly users**.
+Run Grovs Community for up to **100,000 users** on a server with
+**4 vCPU / 8 GB RAM / 80 GB SSD**.
 
-**Beyond ~200k users you'll outgrow a single box** and should move to a **custom
-deployment + infrastructure**: managed/replicated PostgreSQL, a dedicated Redis,
-external object storage (e.g. AWS S3), and horizontally-scaled web/worker nodes behind a
-load balancer. The same images and environment variables still apply — you split the
-services across hosts and point the connection strings (`DATABASE_URL`, `REDIS_URL`,
-`S3_*`) at the managed services. [Reach out](https://grovs.io) if you need help sizing a
-larger deployment.
-
-### Recommended server
-
-Tested baseline (what this guide is validated on):
-
-| | |
-|---|---|
-| Provider | Hetzner Cloud (any VPS or bare-metal works) |
-| Type | **CX33-class** (shared vCPU) or better |
-| CPU / RAM | **4 vCPU / 8 GB RAM** floor — 8 vCPU / 16 GB for headroom |
-| Disk | **80 GB+ SSD** (PostgreSQL, ClickHouse and uploads grow over time) |
-| OS | Ubuntu 22.04 / 24.04 LTS with Docker + Compose v2 |
-| Network | Public IPv4, ports **80 + 443** open, wildcard DNS `*.yourdomain` |
-
-As you add CPU/RAM, raise `WEB_CONCURRENCY`, `RAILS_MAX_THREADS`,
-`SIDEKIQ_EVENTS_CONCURRENCY`, and `POSTGRES_MAX_CONNECTIONS` (see the
-[environment reference](#environment-variables)).
+Need more flexibility and performance? [Purchase a self-hosted Enterprise
+plan](https://www.grovs.io/contact) tailored to your deployment.
 
 ---
 
@@ -437,16 +438,33 @@ vars only if you want **password reset** or **data-export** emails.
 
 ## Upgrades
 
+Back up the databases, uploads and `.env` first. Read the release notes and
+select a published version for both images. This procedure includes a short
+maintenance window:
+
 ```bash
 # bump GROVS_VERSION in .env, then
 docker compose --profile standalone pull
-docker compose --profile standalone up -d     # migrate runs first, web and workers restart on the new image
+docker compose --profile standalone stop dashboard web worker-1 worker-2
+docker compose --profile standalone run --rm migrate
+docker compose --profile standalone up -d
+docker compose --profile standalone ps -a
 ```
 
-Or re-run `install.sh` with `GROVS_VERSION=<new>`; it keeps your `.env`.
+If migrations fail, inspect their logs and resolve the error before starting the
+application. For local trials, replace `--profile standalone` with
+`-f docker-compose.yml -f docker-compose.local.yml`. In Coolify/Dokploy, use the
+platform Compose file and imported environment, and run these steps through the
+platform's deployment controls or its deployment directory.
+
+Setup and the installer preserve an existing `.env`; edit its `GROVS_VERSION`
+explicitly when upgrading. Never regenerate encryption keys during an upgrade.
 
 
 ## Backups
+
+Keep an encrypted, off-server copy of `.env` (or the platform's environment).
+It contains credentials and encryption keys needed to restore the installation.
 
 Durable state lives in named volumes:
 - **`pg_data`** — the system of record: projects, links, users, purchases. Back it up (`pg_dump` off-box or volume snapshots).

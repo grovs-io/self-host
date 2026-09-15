@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Grovs Community on one Ubuntu VM with a static IP and persistent root disk.
+
+Parameters:
+  AppDomain:
+    Type: String
+    Description: Bare domain, for example example.com (without https or a path).
+    AllowedPattern: '[a-z0-9][a-z0-9.-]*\.[a-z0-9-]+'
+  AdminEmail:
+    Type: String
+    AllowedPattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+'
+  GrovsVersion:
+    Type: String
+    Default: 2.3.0
+    AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?'
+  StackRef:
+    Type: String
+    Default: main
+    Description: self-host Git ref containing deploy/vm/bootstrap.sh. Pin a reviewed commit for repeatable installs.
+    AllowedPattern: '[A-Za-z0-9._/-]+'
+  InstanceType:
+    Type: String
+    Default: t3.xlarge
+    AllowedValues: [t3.xlarge, t3.2xlarge, m6i.xlarge, m6i.2xlarge]
+  DiskSize:
+    Type: Number
+    Default: 100
+    MinValue: 80
+    MaxValue: 1000
+    Description: Root EBS disk size in GiB; retained after instance termination.
+  UbuntuImage:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/noble/stable/current/amd64/hvm/ebs-gp3/ami-id
+
+Resources:
+  Network:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.42.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+  Gateway:
+    Type: AWS::EC2::InternetGateway
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Network
+      InternetGatewayId: !Ref Gateway
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Network
+      CidrBlock: 10.42.0.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [0, !GetAZs '']
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Network
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Gateway
+  SubnetRoute:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet
+      RouteTableId: !Ref RouteTable
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Public HTTP and HTTPS; administrative access through Session Manager.
+      VpcId: !Ref Network
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref InstanceRole]
+  Server:
+    Type: AWS::EC2::Instance
+    DependsOn: [DefaultRoute, SubnetRoute]
+    Properties:
+      ImageId: !Ref UbuntuImage
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet
+      SecurityGroupIds: [!Ref SecurityGroup]
+      IamInstanceProfile: !Ref InstanceProfile
+      MetadataOptions:
+        HttpTokens: required
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: !Ref DiskSize
+            Encrypted: true
+            DeleteOnTermination: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-grovs
+      UserData:
+        Fn::Base64: !Sub |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          umask 077
+          export GROVS_DOMAIN='${AppDomain}'
+          export GROVS_ADMIN_EMAIL='${AdminEmail}'
+          export GROVS_VERSION='${GrovsVersion}'
+          export GROVS_STACK_REF='${StackRef}'
+          curl --fail --show-error --silent --retry 5 \
+            'https://raw.githubusercontent.com/grovs-io/self-host/${StackRef}/deploy/vm/bootstrap.sh' \
+            -o /root/grovs-bootstrap.sh
+          bash /root/grovs-bootstrap.sh
+  PublicIp:
+    Type: AWS::EC2::EIP
+    DependsOn: GatewayAttachment
+    Properties:
+      Domain: vpc
+  IpAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref Server
+      AllocationId: !GetAtt PublicIp.AllocationId
+
+Outputs:
+  IpAddress:
+    Description: Point the Grovs DNS records at this static IP.
+    Value: !Ref PublicIp
+  Dashboard:
+    Description: Available after bootstrap finishes and DNS points to the IP.
+    Value: !Sub https://dashboard.${AppDomain}
+  InstanceId:
+    Description: EC2 > Connect > Session Manager; then sudo cat /opt/grovs/.env for credentials.
+    Value: !Ref Server

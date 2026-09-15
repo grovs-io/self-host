@@ -1,0 +1,8 @@
+.env
+docker-compose.override.yml
+
+# Deployment guides are source files, including on machines that ignore docs globally.
+!docs/
+!docs/**
+__pycache__/
+node_modules/
