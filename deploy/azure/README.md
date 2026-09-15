@@ -10,7 +10,7 @@ It is independent of a Microsoft Marketplace listing.
 `deploy/vm/bootstrap.sh` changes:
 
 ```bash
-az bicep build --file deploy/azure/main.bicep
+az bicep build --file deploy/azure/main.bicep --outfile deploy/azure/azuredeploy.json
 python3 -m unittest discover -s tests
 ```
 

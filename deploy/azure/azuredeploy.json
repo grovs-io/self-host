@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.47.16.16243",
-      "templateHash": "8375245872109085346"
+      "templateHash": "1707266343421135683"
     }
   },
   "parameters": {
@@ -61,7 +61,7 @@
     },
     "stackRef": {
       "type": "string",
-      "defaultValue": "d9f291f",
+      "defaultValue": "d9f291fb7a943adc8b712696342180ea63438cfd",
       "metadata": {
         "description": "Reviewed self-host Git commit containing the Compose stack. Keep pinned for repeatable installs."
       }
@@ -93,7 +93,8 @@
     "$fxv#0": "#!/usr/bin/env bash\n# Run as root on a fresh Ubuntu 24.04 VM. Never prints generated credentials.\nset -euo pipefail\numask 077\n: \"${GROVS_DOMAIN:?Set the app domain}\"\n: \"${GROVS_ADMIN_EMAIL:?Set the admin email}\"\n: \"${GROVS_VERSION:?Set a published release version}\"\nSTACK_REF=\"${GROVS_STACK_REF:-main}\"\n[[ \"$GROVS_DOMAIN\" != local && \"$GROVS_DOMAIN\" != lvh.me ]] || {\n  echo \"Cloud deployments require a public domain.\" >&2; exit 1;\n}\n[[ $(id -u) == 0 ]] || { echo \"Run bootstrap.sh as root.\" >&2; exit 1; }\n# Provided by Ubuntu on the target VM; absent on macOS validation hosts.\n# shellcheck source=/dev/null\n. /etc/os-release\n[[ \"$ID\" == ubuntu && \"$VERSION_ID\" == 24.04 ]] || {\n  echo \"This bootstrap supports Ubuntu 24.04.\" >&2; exit 1;\n}\n\nexport DEBIAN_FRONTEND=noninteractive\napt-get update -qq\napt-get install -y ca-certificates curl git openssl docker.io docker-compose-v2\nsystemctl enable --now docker\n\n# Do not replace an existing checkout or regenerate an existing installation's secrets.\nif [[ ! -d /opt/grovs ]]; then\n  CHECKOUT=\"$(mktemp -d /opt/grovs-install.XXXXXX)\"\n  trap 'rm -rf \"$CHECKOUT\"' EXIT\n  git clone --quiet https://github.com/grovs-io/self-host.git \"$CHECKOUT\"\n  git -C \"$CHECKOUT\" checkout --quiet --detach \"$STACK_REF\"\n  mv \"$CHECKOUT\" /opt/grovs\n  trap - EXIT\nfi\ncd /opt/grovs\nchmod 700 /opt/grovs\nGROVS_CONFIG_DIR=/opt/grovs ./scripts/setup.sh > /opt/grovs/setup.log 2>&1\nchmod 600 .env setup.log\n\ncat > /etc/systemd/system/grovs.service <<'UNIT'\n[Unit]\nDescription=Grovs Community Docker Compose stack\nRequires=docker.service\nAfter=docker.service network-online.target\nWants=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nWorkingDirectory=/opt/grovs\nExecStart=/usr/bin/docker compose --profile standalone up -d\nExecStop=/usr/bin/docker compose --profile standalone stop\nTimeoutStartSec=1200\nTimeoutStopSec=120\n\n[Install]\nWantedBy=multi-user.target\nUNIT\n\ndocker compose --profile standalone pull\nsystemctl daemon-reload\nsystemctl enable --now grovs\necho \"Grovs containers started. Configure DNS, then open https://dashboard.$GROVS_DOMAIN.\"\necho \"Administrator credentials are in /opt/grovs/.env (root access required).\"\n",
     "prefix": "[format('grovs-{0}', uniqueString(resourceGroup().id))]",
     "startupTemplate": "#!/usr/bin/env bash\nset -euo pipefail\nexport GROVS_DOMAIN=\"$(printf %s '__DOMAIN__' | base64 --decode)\"\nexport GROVS_ADMIN_EMAIL=\"$(printf %s '__EMAIL__' | base64 --decode)\"\nexport GROVS_VERSION=\"$(printf %s '__VERSION__' | base64 --decode)\"\nexport GROVS_STACK_REF=\"$(printf %s '__REF__' | base64 --decode)\"\n",
-    "startup": "[concat(replace(replace(replace(replace(variables('startupTemplate'), '__DOMAIN__', base64(parameters('appDomain'))), '__EMAIL__', base64(parameters('adminEmail'))), '__VERSION__', base64(parameters('grovsVersion'))), '__REF__', base64(parameters('stackRef'))), '\n', variables('$fxv#0'))]"
+    "startupHeader": "[replace(replace(replace(replace(variables('startupTemplate'), '__DOMAIN__', base64(parameters('appDomain'))), '__EMAIL__', base64(parameters('adminEmail'))), '__VERSION__', base64(parameters('grovsVersion'))), '__REF__', base64(parameters('stackRef')))]",
+    "startup": "[format('{0}\n{1}', variables('startupHeader'), variables('$fxv#0'))]"
   },
   "resources": [
     {

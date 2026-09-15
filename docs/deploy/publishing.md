@@ -15,7 +15,7 @@ python3 scripts/generate-paas.py --check
 python3 scripts/generate-railway-template.py --check
 python3 -m unittest discover -s tests -v
 cfn-lint deploy/aws/cloudformation.yaml
-az bicep build --file deploy/azure/main.bicep
+az bicep build --file deploy/azure/main.bicep --outfile deploy/azure/azuredeploy.json
 npm --prefix .railway ci
 npm --prefix .railway run check
 npm --prefix .railway test

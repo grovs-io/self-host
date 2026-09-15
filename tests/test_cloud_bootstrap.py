@@ -3,6 +3,8 @@ import base64
 import importlib.util
 import json
 from pathlib import Path
+import shutil
+import tempfile
 import subprocess
 import sys
 import unittest
@@ -90,7 +92,8 @@ class AzureTemplateTest(unittest.TestCase):
 
     def test_bootstrap_parameters_are_substituted_and_safely_encoded(self):
         variables = self.template["variables"]
-        expression = variables["startup"]
+        expression = variables["startupHeader"]
+        self.assertIn("variables('startupHeader')", variables["startup"])
         header = variables["startupTemplate"]
         for marker, name, value in [("__DOMAIN__", "appDomain", "grovs.example.com"),
                                     ("__EMAIL__", "adminEmail", "admin'$(echo injected)@example.com"),
@@ -107,3 +110,22 @@ class AzureTemplateTest(unittest.TestCase):
         self.assertIn(bootstrap, variables.values())
         vm = self.resources["Microsoft.Compute/virtualMachines"]["properties"]
         self.assertEqual(vm["osProfile"]["customData"], "[base64(variables('startup'))]")
+
+    def test_checked_in_template_matches_bicep_source(self):
+        compiler = shutil.which("bicep")
+        azure_compiler = Path.home() / ".azure/bin/bicep"
+        if not compiler and azure_compiler.is_file():
+            compiler = str(azure_compiler)
+        if not compiler:
+            self.skipTest("Install Bicep to check compiled template freshness")
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "azuredeploy.json"
+            result = subprocess.run([compiler, "build", str(ROOT / "deploy/azure/main.bicep"),
+                                     "--outfile", str(output)], text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            actual = json.loads(output.read_text())
+            expected = self.template.copy()
+            # Compiler metadata changes between Bicep versions.
+            actual.pop("metadata", None)
+            expected.pop("metadata", None)
+            self.assertEqual(actual, expected, "Rebuild deploy/azure/azuredeploy.json")
