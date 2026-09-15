@@ -2,7 +2,7 @@
 # One-command install: curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/main/install.sh | bash
 set -euo pipefail
 
-VERSION="${GROVS_VERSION:-2.3.0}"
+VERSION="${GROVS_VERSION:-2.3.1}"
 DIR="${GROVS_DIR:-grovs}"
 # Stack files track main; images are pinned by VERSION.
 BASE="${GROVS_STACK_URL:-https://raw.githubusercontent.com/grovs-io/self-host/main}"
