@@ -1,0 +1,16 @@
+---
+- name: Download the reviewed Grovs bootstrap
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/grovs-io/self-host/d9f291fb7a943adc8b712696342180ea63438cfd/deploy/vm/bootstrap.sh
+    dest: /root/grovs-bootstrap.sh
+    mode: '0700'
+    checksum: sha256:8371c66310080619effb5c757a5e259534ee9b6262c124ff38d5307339d5e64e
+- name: Initialize the stack and per-instance credentials
+  ansible.builtin.command: bash /root/grovs-bootstrap.sh
+  environment:
+    GROVS_DOMAIN: "{{ grovs_domain }}"
+    GROVS_ADMIN_EMAIL: "{{ grovs_admin_email }}"
+    GROVS_VERSION: '2.3.1'
+    GROVS_STACK_REF: d9f291fb7a943adc8b712696342180ea63438cfd
+  no_log: true
+  changed_when: true

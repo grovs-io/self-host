@@ -1,0 +1,18 @@
+---
+- name: Validate marketplace inputs before changing the server
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Check required fields
+      ansible.builtin.assert:
+        that:
+          - lookup('env', 'GROVS_DOMAIN') is match('^[a-z0-9][a-z0-9.-]*\.[a-z0-9-]+$')
+          - not lookup('env', 'GROVS_DOMAIN').endswith('lvh.me')
+          - lookup('env', 'GROVS_ADMIN_EMAIL') is match('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$')
+          - lookup('env', 'SUDO_USER_NAME') is match('^[a-z][a-z0-9_-]{1,30}$')
+          - lookup('env', 'SUDO_USER_NAME') != 'root'
+          - lookup('env', 'PUBKEY') is match('^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp256) [A-Za-z0-9+/=]+( .*)?$')
+          - lookup('env', 'SSH_SOURCE_CIDR') is match('^([0-9]{1,3}\.){3}[0-9]{1,3}/32$')
+          - lookup('env', 'SSH_SOURCE_CIDR').split('/')[0].split('.') | map('int') | max <= 255
+        fail_msg: Supply a public domain, admin email, sudo username, SSH public key and your IPv4/32.

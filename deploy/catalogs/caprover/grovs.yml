@@ -1,0 +1,474 @@
+{
+  "captainVersion": 4,
+  "services": {
+    "$$cap_appname-postgres": {
+      "image": "postgres:16.10-alpine",
+      "environment": {
+        "POSTGRES_DB": "grovs_production",
+        "POSTGRES_USER": "grovs",
+        "POSTGRES_PASSWORD": "$$cap_POSTGRES_PASSWORD"
+      },
+      "caproverExtra": {
+        "notExposeAsWebApp": "true"
+      },
+      "volumes": [
+        "$$cap_appname-postgres-data:/var/lib/postgresql/data"
+      ]
+    },
+    "$$cap_appname-redis": {
+      "image": "redis:7.4.5-alpine",
+      "environment": {},
+      "caproverExtra": {
+        "notExposeAsWebApp": "true"
+      },
+      "volumes": [
+        "$$cap_appname-redis-data:/data"
+      ],
+      "command": [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--maxmemory-policy",
+        "noeviction",
+        "--requirepass",
+        "$$cap_REDIS_PASSWORD"
+      ]
+    },
+    "$$cap_appname-clickhouse": {
+      "image": "clickhouse/clickhouse-server:25.3.6.56",
+      "environment": {
+        "CLICKHOUSE_DB": "grovs_production",
+        "CLICKHOUSE_USER": "grovs",
+        "CLICKHOUSE_PASSWORD": "$$cap_CLICKHOUSE_PASSWORD"
+      },
+      "caproverExtra": {
+        "notExposeAsWebApp": "true"
+      },
+      "volumes": [
+        "$$cap_appname-clickhouse-data:/var/lib/clickhouse"
+      ]
+    },
+    "$$cap_appname-web": {
+      "image": "ghcr.io/grovs-io/backend:2.3.1",
+      "environment": {
+        "SERVER_HOST_PROTOCOL": "https://",
+        "REACT_HOST_PROTOCOL": "https://",
+        "POSTGRES_USER": "grovs",
+        "POSTGRES_DB": "grovs_production",
+        "POSTGRES_MAX_CONNECTIONS": "200",
+        "CLICKHOUSE_WRITE_ENABLED": "true",
+        "CLICKHOUSE_READ_ENABLED": "true",
+        "CLICKHOUSE_PRIMARY": "true",
+        "CLICKHOUSE_ANALYTICS_ROLLUPS_READ_ENABLED": "true",
+        "CLICKHOUSE_ATTRIBUTION_READ_ENABLED": "true",
+        "CLICKHOUSE_LINK_DIMENSIONS_READ_ENABLED": "true",
+        "REVENUE_READS_FROM_LEDGER": "true",
+        "CLICKHOUSE_ROLLUP_FAST_LANE": "true",
+        "DASHBOARD_CACHE_TTL_SECONDS": "60",
+        "PG_SHADOW_WRITES": "false",
+        "WEB_CONCURRENCY": "2",
+        "RAILS_MAX_THREADS": "5",
+        "RAILS_DB_POOL": "10",
+        "SIDEKIQ_EVENTS_CONCURRENCY": "10",
+        "ACTIVE_STORAGE_SERVICE": "amazon",
+        "PUBLIC_GO_PROJECT_IDENTIFIER": "go-self-hosted",
+        "DEFAULT_LOGO_URL": "https://appssemble-assets.s3.eu-north-1.amazonaws.com/linksquared/logo-square-new.svg",
+        "DEFAULT_SOCIAL_PREVIEW_URL": "https://appssemble-assets.s3.eu-north-1.amazonaws.com/linksquared/social-media-placeholder.jpg",
+        "DEFAULT_LINK_TITLE": "grovs",
+        "DEFAULT_LINK_SUBTITLE": "Dynamic links, attributions, and referrals across mobile and web platforms.",
+        "MAILER_DELIVERY_METHOD": "",
+        "SMTP_ADDRESS": "smtp.example.com",
+        "SMTP_PORT": "587",
+        "SMTP_USERNAME": "",
+        "SMTP_PASSWORD": "",
+        "SMTP_AUTHENTICATION": "plain",
+        "SMTP_ENABLE_STARTTLS_AUTO": "true",
+        "RAILS_ENV": "production",
+        "GROVS_SELF_HOSTED": "true",
+        "GROVS_EE": "false",
+        "RAILS_LOG_TO_STDOUT": "true",
+        "RAILS_SERVE_STATIC_FILES": "true",
+        "CLICKHOUSE_DATABASE": "grovs_production",
+        "PORT": "3000",
+        "POSTGRES_PASSWORD": "$$cap_POSTGRES_PASSWORD",
+        "CLICKHOUSE_PASSWORD": "$$cap_CLICKHOUSE_PASSWORD",
+        "SECRET_KEY_BASE": "$$cap_SECRET_KEY_BASE",
+        "ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY": "$$cap_ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY",
+        "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY": "$$cap_ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY",
+        "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT": "$$cap_ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT",
+        "ADMIN_API_KEY": "$$cap_ADMIN_API_KEY",
+        "DIAGNOSTICS_API_KEY": "$$cap_DIAGNOSTICS_API_KEY",
+        "SENT_QUOTAS_WEBHOOK_KEY": "$$cap_SENT_QUOTAS_WEBHOOK_KEY",
+        "OAUTH_CLIENT_UID": "$$cap_OAUTH_CLIENT_UID",
+        "OAUTH_CLIENT_SECRET": "$$cap_OAUTH_CLIENT_SECRET",
+        "BOOTSTRAP_ADMIN_PASSWORD": "$$cap_BOOTSTRAP_ADMIN_PASSWORD",
+        "REDIS_PASSWORD": "$$cap_REDIS_PASSWORD",
+        "SERVER_HOST": "$$cap_SERVER_HOST",
+        "DOMAIN_LIVE": "$$cap_DOMAIN_LIVE",
+        "DOMAIN_TEST": "$$cap_DOMAIN_TEST",
+        "BOOTSTRAP_ADMIN_EMAIL": "$$cap_BOOTSTRAP_ADMIN_EMAIL",
+        "AWS_S3_KEY_ID": "$$cap_AWS_S3_KEY_ID",
+        "AWS_S3_ACCESS_KEY": "$$cap_AWS_S3_ACCESS_KEY",
+        "AWS_S3_REGION": "$$cap_AWS_S3_REGION",
+        "AWS_S3_BUCKET": "$$cap_AWS_S3_BUCKET",
+        "S3_ENDPOINT": "$$cap_S3_ENDPOINT",
+        "POSTGRES_HOST": "srv-captain--$$cap_appname-postgres",
+        "REDIS_HOST": "srv-captain--$$cap_appname-redis",
+        "CLICKHOUSE_HOST": "srv-captain--$$cap_appname-clickhouse",
+        "WEB_HOST": "srv-captain--$$cap_appname-web",
+        "WEB_PORT": "3000",
+        "SMTP_DOMAIN": "$$cap_SERVER_HOST",
+        "MAILER_FROM": "Grovs <noreply@$$cap_SERVER_HOST>"
+      },
+      "caproverExtra": {
+        "containerHttpPort": "3000"
+      },
+      "command": [
+        "bash",
+        "-ec",
+        "#!/usr/bin/env bash\n# Sourced into the commands embedded in Railway/Render configuration.\n# No files from this repository need to be present in the application image.\nset -eu\n: \"${SERVER_HOST:?Set your app domain}\"\n: \"${DOMAIN_LIVE:?Set your production links domain}\"\n: \"${DOMAIN_TEST:?Set your test links domain}\"\n: \"${AWS_S3_KEY_ID:?Set object storage credentials}\"\n: \"${AWS_S3_ACCESS_KEY:?Set object storage credentials}\"\n: \"${AWS_S3_REGION:?Set your bucket region}\"\n: \"${AWS_S3_BUCKET:?Set your bucket name}\"\nexport ACTIVE_STORAGE_SERVICE=amazon\nexport SERVER_HOST_PROTOCOL=https:// REACT_HOST_PROTOCOL=https://\nexport REACT_HOST=\"dashboard.$SERVER_HOST\"\nexport API_HOST=\"api.$SERVER_HOST\" SDK_HOST=\"sdk.$SERVER_HOST\"\nexport DASHBOARD_HOST=\"$REACT_HOST\" MCP_HOST=\"mcp.$SERVER_HOST\" GO_HOST=\"go.$SERVER_HOST\"\nexport PREVIEW_HOST=\"preview.$SERVER_HOST\"\nexport LINKS_PROD_HOST=\"links.$DOMAIN_LIVE\" LINKS_TEST_HOST=\"links.$DOMAIN_TEST\"\nexport PREVIEW_BASE_URL=\"https://preview.$SERVER_HOST\"\nexport MCP_CONSENT_URL=\"https://dashboard.$SERVER_HOST/mcp/authorize\"\nexport S3_ASSET_PREFIX=\"https://api.$SERVER_HOST\"\nencode_password() {\n  ruby -ruri -e 'print URI.encode_www_form_component(ENV.fetch(ARGV.fetch(0))).gsub(\"+\", \"%20\")' \"$1\"\n}\nif [ -z \"${DATABASE_URL:-}\" ]; then\n  : \"${POSTGRES_HOST:?Set the private PostgreSQL host}\"\n  DATABASE_URL=\"postgres://grovs:$(encode_password POSTGRES_PASSWORD)@$POSTGRES_HOST:5432/grovs_production\"\n  export DATABASE_URL\nfi\nif [ -z \"${REDIS_URL:-}\" ]; then\n  : \"${REDIS_HOST:?Set the private Redis host}\"\n  REDIS_URL=\"redis://:$(encode_password REDIS_PASSWORD)@$REDIS_HOST:6379/0\"\n  export REDIS_URL\nfi\nif [ -z \"${CLICKHOUSE_URL:-}\" ]; then\n  : \"${CLICKHOUSE_HOST:?Set the private ClickHouse host}\"\n  : \"${CLICKHOUSE_PASSWORD:?Set the ClickHouse password}\"\n  ENCODED_PASSWORD=$(encode_password CLICKHOUSE_PASSWORD)\n  export CLICKHOUSE_URL=\"http://grovs:$ENCODED_PASSWORD@$CLICKHOUSE_HOST:8123\"\nfi\n\nwait_for_http() {\n  local attempt\n  for ((attempt=0; attempt<120; attempt++)); do\n    if curl --fail --silent --max-time 5 \"$1\" >/dev/null; then return 0; fi\n    sleep 5\n  done\n  echo \"Dependency did not become healthy within the startup window.\" >&2\n  return 1\n}\n\nruby -rpg -e '120.times do\n  begin\n    PG.connect(ENV.fetch(\"DATABASE_URL\"), connect_timeout: 5).close\n    exit 0\n  rescue PG::Error\n    sleep 5\n  end\nend\nabort \"PostgreSQL did not become ready\"'\n\nwait_for_http \"http://$CLICKHOUSE_HOST:8123/ping\"\nbin/rails db:prepare\nbin/rails db:seed\nbin/rails clickhouse:setup\nexec bundle exec puma -b \"tcp://0.0.0.0:${PORT:-3000}\""
+      ]
+    },
+    "$$cap_appname-worker-1": {
+      "image": "ghcr.io/grovs-io/backend:2.3.1",
+      "environment": {
+        "SERVER_HOST_PROTOCOL": "https://",
+        "REACT_HOST_PROTOCOL": "https://",
+        "POSTGRES_USER": "grovs",
+        "POSTGRES_DB": "grovs_production",
+        "POSTGRES_MAX_CONNECTIONS": "200",
+        "CLICKHOUSE_WRITE_ENABLED": "true",
+        "CLICKHOUSE_READ_ENABLED": "true",
+        "CLICKHOUSE_PRIMARY": "true",
+        "CLICKHOUSE_ANALYTICS_ROLLUPS_READ_ENABLED": "true",
+        "CLICKHOUSE_ATTRIBUTION_READ_ENABLED": "true",
+        "CLICKHOUSE_LINK_DIMENSIONS_READ_ENABLED": "true",
+        "REVENUE_READS_FROM_LEDGER": "true",
+        "CLICKHOUSE_ROLLUP_FAST_LANE": "true",
+        "DASHBOARD_CACHE_TTL_SECONDS": "60",
+        "PG_SHADOW_WRITES": "false",
+        "WEB_CONCURRENCY": "2",
+        "RAILS_MAX_THREADS": "5",
+        "RAILS_DB_POOL": "10",
+        "SIDEKIQ_EVENTS_CONCURRENCY": "10",
+        "ACTIVE_STORAGE_SERVICE": "amazon",
+        "PUBLIC_GO_PROJECT_IDENTIFIER": "go-self-hosted",
+        "DEFAULT_LOGO_URL": "https://appssemble-assets.s3.eu-north-1.amazonaws.com/linksquared/logo-square-new.svg",
+        "DEFAULT_SOCIAL_PREVIEW_URL": "https://appssemble-assets.s3.eu-north-1.amazonaws.com/linksquared/social-media-placeholder.jpg",
+        "DEFAULT_LINK_TITLE": "grovs",
+        "DEFAULT_LINK_SUBTITLE": "Dynamic links, attributions, and referrals across mobile and web platforms.",
+        "MAILER_DELIVERY_METHOD": "",
+        "SMTP_ADDRESS": "smtp.example.com",
+        "SMTP_PORT": "587",
+        "SMTP_USERNAME": "",
+        "SMTP_PASSWORD": "",
+        "SMTP_AUTHENTICATION": "plain",
+        "SMTP_ENABLE_STARTTLS_AUTO": "true",
+        "RAILS_ENV": "production",
+        "GROVS_SELF_HOSTED": "true",
+        "GROVS_EE": "false",
+        "RAILS_LOG_TO_STDOUT": "true",
+        "RAILS_SERVE_STATIC_FILES": "true",
+        "CLICKHOUSE_DATABASE": "grovs_production",
+        "PORT": "3000",
+        "POSTGRES_PASSWORD": "$$cap_POSTGRES_PASSWORD",
+        "CLICKHOUSE_PASSWORD": "$$cap_CLICKHOUSE_PASSWORD",
+        "SECRET_KEY_BASE": "$$cap_SECRET_KEY_BASE",
+        "ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY": "$$cap_ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY",
+        "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY": "$$cap_ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY",
+        "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT": "$$cap_ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT",
+        "ADMIN_API_KEY": "$$cap_ADMIN_API_KEY",
+        "DIAGNOSTICS_API_KEY": "$$cap_DIAGNOSTICS_API_KEY",
+        "SENT_QUOTAS_WEBHOOK_KEY": "$$cap_SENT_QUOTAS_WEBHOOK_KEY",
+        "OAUTH_CLIENT_UID": "$$cap_OAUTH_CLIENT_UID",
+        "OAUTH_CLIENT_SECRET": "$$cap_OAUTH_CLIENT_SECRET",
+        "BOOTSTRAP_ADMIN_PASSWORD": "$$cap_BOOTSTRAP_ADMIN_PASSWORD",
+        "REDIS_PASSWORD": "$$cap_REDIS_PASSWORD",
+        "SERVER_HOST": "$$cap_SERVER_HOST",
+        "DOMAIN_LIVE": "$$cap_DOMAIN_LIVE",
+        "DOMAIN_TEST": "$$cap_DOMAIN_TEST",
+        "BOOTSTRAP_ADMIN_EMAIL": "$$cap_BOOTSTRAP_ADMIN_EMAIL",
+        "AWS_S3_KEY_ID": "$$cap_AWS_S3_KEY_ID",
+        "AWS_S3_ACCESS_KEY": "$$cap_AWS_S3_ACCESS_KEY",
+        "AWS_S3_REGION": "$$cap_AWS_S3_REGION",
+        "AWS_S3_BUCKET": "$$cap_AWS_S3_BUCKET",
+        "S3_ENDPOINT": "$$cap_S3_ENDPOINT",
+        "POSTGRES_HOST": "srv-captain--$$cap_appname-postgres",
+        "REDIS_HOST": "srv-captain--$$cap_appname-redis",
+        "CLICKHOUSE_HOST": "srv-captain--$$cap_appname-clickhouse",
+        "WEB_HOST": "srv-captain--$$cap_appname-web",
+        "WEB_PORT": "3000",
+        "SMTP_DOMAIN": "$$cap_SERVER_HOST",
+        "MAILER_FROM": "Grovs <noreply@$$cap_SERVER_HOST>"
+      },
+      "caproverExtra": {
+        "notExposeAsWebApp": "true"
+      },
+      "command": [
+        "bash",
+        "-ec",
+        "#!/usr/bin/env bash\n# Sourced into the commands embedded in Railway/Render configuration.\n# No files from this repository need to be present in the application image.\nset -eu\n: \"${SERVER_HOST:?Set your app domain}\"\n: \"${DOMAIN_LIVE:?Set your production links domain}\"\n: \"${DOMAIN_TEST:?Set your test links domain}\"\n: \"${AWS_S3_KEY_ID:?Set object storage credentials}\"\n: \"${AWS_S3_ACCESS_KEY:?Set object storage credentials}\"\n: \"${AWS_S3_REGION:?Set your bucket region}\"\n: \"${AWS_S3_BUCKET:?Set your bucket name}\"\nexport ACTIVE_STORAGE_SERVICE=amazon\nexport SERVER_HOST_PROTOCOL=https:// REACT_HOST_PROTOCOL=https://\nexport REACT_HOST=\"dashboard.$SERVER_HOST\"\nexport API_HOST=\"api.$SERVER_HOST\" SDK_HOST=\"sdk.$SERVER_HOST\"\nexport DASHBOARD_HOST=\"$REACT_HOST\" MCP_HOST=\"mcp.$SERVER_HOST\" GO_HOST=\"go.$SERVER_HOST\"\nexport PREVIEW_HOST=\"preview.$SERVER_HOST\"\nexport LINKS_PROD_HOST=\"links.$DOMAIN_LIVE\" LINKS_TEST_HOST=\"links.$DOMAIN_TEST\"\nexport PREVIEW_BASE_URL=\"https://preview.$SERVER_HOST\"\nexport MCP_CONSENT_URL=\"https://dashboard.$SERVER_HOST/mcp/authorize\"\nexport S3_ASSET_PREFIX=\"https://api.$SERVER_HOST\"\nencode_password() {\n  ruby -ruri -e 'print URI.encode_www_form_component(ENV.fetch(ARGV.fetch(0))).gsub(\"+\", \"%20\")' \"$1\"\n}\nif [ -z \"${DATABASE_URL:-}\" ]; then\n  : \"${POSTGRES_HOST:?Set the private PostgreSQL host}\"\n  DATABASE_URL=\"postgres://grovs:$(encode_password POSTGRES_PASSWORD)@$POSTGRES_HOST:5432/grovs_production\"\n  export DATABASE_URL\nfi\nif [ -z \"${REDIS_URL:-}\" ]; then\n  : \"${REDIS_HOST:?Set the private Redis host}\"\n  REDIS_URL=\"redis://:$(encode_password REDIS_PASSWORD)@$REDIS_HOST:6379/0\"\n  export REDIS_URL\nfi\nif [ -z \"${CLICKHOUSE_URL:-}\" ]; then\n  : \"${CLICKHOUSE_HOST:?Set the private ClickHouse host}\"\n  : \"${CLICKHOUSE_PASSWORD:?Set the ClickHouse password}\"\n  ENCODED_PASSWORD=$(encode_password CLICKHOUSE_PASSWORD)\n  export CLICKHOUSE_URL=\"http://grovs:$ENCODED_PASSWORD@$CLICKHOUSE_HOST:8123\"\nfi\n\nwait_for_http() {\n  local attempt\n  for ((attempt=0; attempt<120; attempt++)); do\n    if curl --fail --silent --max-time 5 \"$1\" >/dev/null; then return 0; fi\n    sleep 5\n  done\n  echo \"Dependency did not become healthy within the startup window.\" >&2\n  return 1\n}\n\nwait_for_http \"http://$WEB_HOST:${WEB_PORT:-3000}/up\"\npids=()\ntrap 'kill \"${pids[@]}\" 2>/dev/null || true' EXIT\ntrap 'exit 143' TERM INT\nbundle exec sidekiq -C config/sidekiq_scheduler.yml &\npids+=($!)\nbundle exec sidekiq -C config/sidekiq_worker.yml &\npids+=($!)\nbundle exec sidekiq -C config/sidekiq_batch.yml &\npids+=($!)\nwait -n\n"
+      ]
+    },
+    "$$cap_appname-worker-2": {
+      "image": "ghcr.io/grovs-io/backend:2.3.1",
+      "environment": {
+        "SERVER_HOST_PROTOCOL": "https://",
+        "REACT_HOST_PROTOCOL": "https://",
+        "POSTGRES_USER": "grovs",
+        "POSTGRES_DB": "grovs_production",
+        "POSTGRES_MAX_CONNECTIONS": "200",
+        "CLICKHOUSE_WRITE_ENABLED": "true",
+        "CLICKHOUSE_READ_ENABLED": "true",
+        "CLICKHOUSE_PRIMARY": "true",
+        "CLICKHOUSE_ANALYTICS_ROLLUPS_READ_ENABLED": "true",
+        "CLICKHOUSE_ATTRIBUTION_READ_ENABLED": "true",
+        "CLICKHOUSE_LINK_DIMENSIONS_READ_ENABLED": "true",
+        "REVENUE_READS_FROM_LEDGER": "true",
+        "CLICKHOUSE_ROLLUP_FAST_LANE": "true",
+        "DASHBOARD_CACHE_TTL_SECONDS": "60",
+        "PG_SHADOW_WRITES": "false",
+        "WEB_CONCURRENCY": "2",
+        "RAILS_MAX_THREADS": "5",
+        "RAILS_DB_POOL": "10",
+        "SIDEKIQ_EVENTS_CONCURRENCY": "10",
+        "ACTIVE_STORAGE_SERVICE": "amazon",
+        "PUBLIC_GO_PROJECT_IDENTIFIER": "go-self-hosted",
+        "DEFAULT_LOGO_URL": "https://appssemble-assets.s3.eu-north-1.amazonaws.com/linksquared/logo-square-new.svg",
+        "DEFAULT_SOCIAL_PREVIEW_URL": "https://appssemble-assets.s3.eu-north-1.amazonaws.com/linksquared/social-media-placeholder.jpg",
+        "DEFAULT_LINK_TITLE": "grovs",
+        "DEFAULT_LINK_SUBTITLE": "Dynamic links, attributions, and referrals across mobile and web platforms.",
+        "MAILER_DELIVERY_METHOD": "",
+        "SMTP_ADDRESS": "smtp.example.com",
+        "SMTP_PORT": "587",
+        "SMTP_USERNAME": "",
+        "SMTP_PASSWORD": "",
+        "SMTP_AUTHENTICATION": "plain",
+        "SMTP_ENABLE_STARTTLS_AUTO": "true",
+        "RAILS_ENV": "production",
+        "GROVS_SELF_HOSTED": "true",
+        "GROVS_EE": "false",
+        "RAILS_LOG_TO_STDOUT": "true",
+        "RAILS_SERVE_STATIC_FILES": "true",
+        "CLICKHOUSE_DATABASE": "grovs_production",
+        "PORT": "3000",
+        "POSTGRES_PASSWORD": "$$cap_POSTGRES_PASSWORD",
+        "CLICKHOUSE_PASSWORD": "$$cap_CLICKHOUSE_PASSWORD",
+        "SECRET_KEY_BASE": "$$cap_SECRET_KEY_BASE",
+        "ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY": "$$cap_ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY",
+        "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY": "$$cap_ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY",
+        "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT": "$$cap_ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT",
+        "ADMIN_API_KEY": "$$cap_ADMIN_API_KEY",
+        "DIAGNOSTICS_API_KEY": "$$cap_DIAGNOSTICS_API_KEY",
+        "SENT_QUOTAS_WEBHOOK_KEY": "$$cap_SENT_QUOTAS_WEBHOOK_KEY",
+        "OAUTH_CLIENT_UID": "$$cap_OAUTH_CLIENT_UID",
+        "OAUTH_CLIENT_SECRET": "$$cap_OAUTH_CLIENT_SECRET",
+        "BOOTSTRAP_ADMIN_PASSWORD": "$$cap_BOOTSTRAP_ADMIN_PASSWORD",
+        "REDIS_PASSWORD": "$$cap_REDIS_PASSWORD",
+        "SERVER_HOST": "$$cap_SERVER_HOST",
+        "DOMAIN_LIVE": "$$cap_DOMAIN_LIVE",
+        "DOMAIN_TEST": "$$cap_DOMAIN_TEST",
+        "BOOTSTRAP_ADMIN_EMAIL": "$$cap_BOOTSTRAP_ADMIN_EMAIL",
+        "AWS_S3_KEY_ID": "$$cap_AWS_S3_KEY_ID",
+        "AWS_S3_ACCESS_KEY": "$$cap_AWS_S3_ACCESS_KEY",
+        "AWS_S3_REGION": "$$cap_AWS_S3_REGION",
+        "AWS_S3_BUCKET": "$$cap_AWS_S3_BUCKET",
+        "S3_ENDPOINT": "$$cap_S3_ENDPOINT",
+        "POSTGRES_HOST": "srv-captain--$$cap_appname-postgres",
+        "REDIS_HOST": "srv-captain--$$cap_appname-redis",
+        "CLICKHOUSE_HOST": "srv-captain--$$cap_appname-clickhouse",
+        "WEB_HOST": "srv-captain--$$cap_appname-web",
+        "WEB_PORT": "3000",
+        "SMTP_DOMAIN": "$$cap_SERVER_HOST",
+        "MAILER_FROM": "Grovs <noreply@$$cap_SERVER_HOST>"
+      },
+      "caproverExtra": {
+        "notExposeAsWebApp": "true"
+      },
+      "command": [
+        "bash",
+        "-ec",
+        "#!/usr/bin/env bash\n# Sourced into the commands embedded in Railway/Render configuration.\n# No files from this repository need to be present in the application image.\nset -eu\n: \"${SERVER_HOST:?Set your app domain}\"\n: \"${DOMAIN_LIVE:?Set your production links domain}\"\n: \"${DOMAIN_TEST:?Set your test links domain}\"\n: \"${AWS_S3_KEY_ID:?Set object storage credentials}\"\n: \"${AWS_S3_ACCESS_KEY:?Set object storage credentials}\"\n: \"${AWS_S3_REGION:?Set your bucket region}\"\n: \"${AWS_S3_BUCKET:?Set your bucket name}\"\nexport ACTIVE_STORAGE_SERVICE=amazon\nexport SERVER_HOST_PROTOCOL=https:// REACT_HOST_PROTOCOL=https://\nexport REACT_HOST=\"dashboard.$SERVER_HOST\"\nexport API_HOST=\"api.$SERVER_HOST\" SDK_HOST=\"sdk.$SERVER_HOST\"\nexport DASHBOARD_HOST=\"$REACT_HOST\" MCP_HOST=\"mcp.$SERVER_HOST\" GO_HOST=\"go.$SERVER_HOST\"\nexport PREVIEW_HOST=\"preview.$SERVER_HOST\"\nexport LINKS_PROD_HOST=\"links.$DOMAIN_LIVE\" LINKS_TEST_HOST=\"links.$DOMAIN_TEST\"\nexport PREVIEW_BASE_URL=\"https://preview.$SERVER_HOST\"\nexport MCP_CONSENT_URL=\"https://dashboard.$SERVER_HOST/mcp/authorize\"\nexport S3_ASSET_PREFIX=\"https://api.$SERVER_HOST\"\nencode_password() {\n  ruby -ruri -e 'print URI.encode_www_form_component(ENV.fetch(ARGV.fetch(0))).gsub(\"+\", \"%20\")' \"$1\"\n}\nif [ -z \"${DATABASE_URL:-}\" ]; then\n  : \"${POSTGRES_HOST:?Set the private PostgreSQL host}\"\n  DATABASE_URL=\"postgres://grovs:$(encode_password POSTGRES_PASSWORD)@$POSTGRES_HOST:5432/grovs_production\"\n  export DATABASE_URL\nfi\nif [ -z \"${REDIS_URL:-}\" ]; then\n  : \"${REDIS_HOST:?Set the private Redis host}\"\n  REDIS_URL=\"redis://:$(encode_password REDIS_PASSWORD)@$REDIS_HOST:6379/0\"\n  export REDIS_URL\nfi\nif [ -z \"${CLICKHOUSE_URL:-}\" ]; then\n  : \"${CLICKHOUSE_HOST:?Set the private ClickHouse host}\"\n  : \"${CLICKHOUSE_PASSWORD:?Set the ClickHouse password}\"\n  ENCODED_PASSWORD=$(encode_password CLICKHOUSE_PASSWORD)\n  export CLICKHOUSE_URL=\"http://grovs:$ENCODED_PASSWORD@$CLICKHOUSE_HOST:8123\"\nfi\n\nwait_for_http() {\n  local attempt\n  for ((attempt=0; attempt<120; attempt++)); do\n    if curl --fail --silent --max-time 5 \"$1\" >/dev/null; then return 0; fi\n    sleep 5\n  done\n  echo \"Dependency did not become healthy within the startup window.\" >&2\n  return 1\n}\n\nwait_for_http \"http://$WEB_HOST:${WEB_PORT:-3000}/up\"\npids=()\ntrap 'kill \"${pids[@]}\" 2>/dev/null || true' EXIT\ntrap 'exit 143' TERM INT\nbundle exec sidekiq -C config/sidekiq_maintenance.yml &\npids+=($!)\nbundle exec sidekiq -C config/sidekiq_device_updates.yml &\npids+=($!)\nwait -n\n"
+      ]
+    },
+    "$$cap_appname-dashboard": {
+      "image": "ghcr.io/grovs-io/dashboard:2.3.1",
+      "environment": {
+        "API_URL": "https://api.$$cap_SERVER_HOST",
+        "OAUTH_CLIENT_UID": "$$cap_OAUTH_CLIENT_UID",
+        "OAUTH_CLIENT_SECRET": "$$cap_OAUTH_CLIENT_SECRET",
+        "HOSTNAME": "0.0.0.0",
+        "PORT": "3000"
+      },
+      "caproverExtra": {
+        "containerHttpPort": "3000"
+      }
+    }
+  },
+  "caproverOneClickApp": {
+    "displayName": "Grovs Community",
+    "isOfficial": true,
+    "description": "Self-hosted deep linking, attribution and analytics for mobile and web apps.",
+    "documentation": "https://github.com/grovs-io/self-host/blob/main/deploy/catalogs/caprover/README.md",
+    "variables": [
+      {
+        "id": "$$cap_SERVER_HOST",
+        "label": "App base domain",
+        "defaultValue": "",
+        "description": "Example: grovs.example.com",
+        "validRegex": "/^[a-z0-9][a-z0-9.-]*\\.[a-z0-9-]+$/"
+      },
+      {
+        "id": "$$cap_DOMAIN_LIVE",
+        "label": "Production links domain",
+        "defaultValue": "",
+        "description": "Example: links.example.com",
+        "validRegex": "/^[a-z0-9][a-z0-9.-]*\\.[a-z0-9-]+$/"
+      },
+      {
+        "id": "$$cap_DOMAIN_TEST",
+        "label": "Test links domain",
+        "defaultValue": "",
+        "description": "Example: test.links.example.com",
+        "validRegex": "/^[a-z0-9][a-z0-9.-]*\\.[a-z0-9-]+$/"
+      },
+      {
+        "id": "$$cap_BOOTSTRAP_ADMIN_EMAIL",
+        "label": "Administrator email",
+        "defaultValue": "",
+        "description": "Example: admin@example.com",
+        "validRegex": "/^[^\\r\\n]+$/"
+      },
+      {
+        "id": "$$cap_AWS_S3_KEY_ID",
+        "label": "Object storage access key",
+        "defaultValue": "",
+        "description": "Object storage access key",
+        "validRegex": "/^[^\\r\\n]+$/"
+      },
+      {
+        "id": "$$cap_AWS_S3_ACCESS_KEY",
+        "label": "Object storage secret key",
+        "defaultValue": "",
+        "description": "Object storage secret key",
+        "validRegex": "/^[^\\r\\n]+$/"
+      },
+      {
+        "id": "$$cap_AWS_S3_REGION",
+        "label": "Bucket region",
+        "defaultValue": "",
+        "description": "Example: us-east-1",
+        "validRegex": "/^[^\\r\\n]+$/"
+      },
+      {
+        "id": "$$cap_AWS_S3_BUCKET",
+        "label": "Private bucket name",
+        "defaultValue": "",
+        "description": "Private bucket name",
+        "validRegex": "/^[^\\r\\n]+$/"
+      },
+      {
+        "id": "$$cap_S3_ENDPOINT",
+        "label": "S3-compatible endpoint (optional)",
+        "defaultValue": "",
+        "description": "S3-compatible endpoint (optional)",
+        "validRegex": "/^[^\\r\\n]*$/"
+      },
+      {
+        "id": "$$cap_POSTGRES_PASSWORD",
+        "label": "POSTGRES_PASSWORD",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_CLICKHOUSE_PASSWORD",
+        "label": "CLICKHOUSE_PASSWORD",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_SECRET_KEY_BASE",
+        "label": "SECRET_KEY_BASE",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY",
+        "label": "ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY",
+        "label": "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT",
+        "label": "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_ADMIN_API_KEY",
+        "label": "ADMIN_API_KEY",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_DIAGNOSTICS_API_KEY",
+        "label": "DIAGNOSTICS_API_KEY",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_SENT_QUOTAS_WEBHOOK_KEY",
+        "label": "SENT_QUOTAS_WEBHOOK_KEY",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_OAUTH_CLIENT_UID",
+        "label": "OAUTH_CLIENT_UID",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_OAUTH_CLIENT_SECRET",
+        "label": "OAUTH_CLIENT_SECRET",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_BOOTSTRAP_ADMIN_PASSWORD",
+        "label": "BOOTSTRAP_ADMIN_PASSWORD",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      },
+      {
+        "id": "$$cap_REDIS_PASSWORD",
+        "label": "REDIS_PASSWORD",
+        "defaultValue": "$$cap_gen_random_hex(32)",
+        "description": "Generated once and shared by the services. Save this value securely.",
+        "validRegex": "/^[a-f0-9]{64}$/"
+      }
+    ],
+    "instructions": {
+      "start": "Requires 4 vCPU / 8 GB RAM, a private S3-compatible bucket, and your own domains. Use one server and one replica of each service. Configure wildcard domains and certificates using the guide. Images: https://github.com/grovs-io/self-host",
+      "end": "Read https://github.com/grovs-io/self-host/blob/main/deploy/catalogs/caprover/README.md to attach domains and enable HTTPS before login. Admin credentials are in the web service environment. Preserve volumes and secrets on upgrades; do not reinstall this template over an existing deployment."
+    }
+  }
+}

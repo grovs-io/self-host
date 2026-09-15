@@ -9,9 +9,11 @@ ranking benefits are controlled by the provider.
 
 | Priority | Platform | Submission route | Available now | Work before an official listing |
 |---|---|---|---|---|
-| 1 | DigitalOcean | [Become a vendor](https://marketplace.digitalocean.com/vendors) | Droplet guide and first-boot cloud-init | Vendor onboarding, sanitized Droplet image, first-boot inputs, live deployment test and review |
-| 1 | Vultr | [Vendor tools and application process](https://github.com/vultr/vultr-marketplace) | Cloud Compute guide and shared bootstrap | Vendor account, application variables, image build, artwork, live test and publication |
-| 1 | Akamai / Linode | [Marketplace contribution guide](https://github.com/akamai-compute-marketplace/marketplace-apps/blob/main/docs/CONTRIBUTING.md) | Ubuntu installation guide | StackScript and Ansible package, limited-user setup, required assets, live test and upstream PR |
+| 1 | DigitalOcean | [Become a vendor](https://marketplace.digitalocean.com/vendors) | [Packer recipe, image cleanup and customer setup](../../deploy/catalogs/digitalocean/README.md) | Vendor onboarding, build sanitized snapshot, live deployment test and review |
+| 1 | Vultr | [Vendor tools and application process](https://github.com/vultr/vultr-marketplace) | [Packer recipe, application variables and first boot](../../deploy/catalogs/vultr/README.md) | Vendor account, configure variables, image build, live test and publication |
+| 1 | Akamai / Linode | [Marketplace contribution guide](https://github.com/akamai-compute-marketplace/marketplace-apps/blob/main/docs/CONTRIBUTING.md) | [StackScript, Ansible, SSH operator and firewall](../../deploy/catalogs/akamai/README.md) | Live test, screenshots and upstream PR |
+| 1 | Easypanel | [Template repository](https://github.com/easypanel-io/templates) | [Native template, logo and schema checks](../../deploy/catalogs/easypanel/README.md) | Live import, wildcard HTTPS verification, populated-dashboard screenshot and upstream PR |
+| 1 | CapRover | [One Click Apps](https://github.com/caprover/one-click-apps) | [Template, logo and upstream validation](../../deploy/catalogs/caprover/README.md) | Live deployment, wildcard HTTPS verification and upstream PR |
 | 1 | Coolify | [Service contribution workflow](https://coolify.io/docs/services) | Compose import and routing guide | Native catalog metadata, generated fields, live test and upstream submission |
 | 1 | Dokploy | [Template repository](https://github.com/Dokploy/templates) | Compose import and routing guide | Native catalog metadata, live test and upstream submission |
 | 2 | Microsoft / Azure | [Azure Application offer](https://learn.microsoft.com/en-us/partner-center/marketplace-offers/plan-azure-application-offer) | ARM template and Deploy to Azure button | Partner Center publisher account, solution-template offer, portal UI definition/package, live test and certification |
@@ -31,12 +33,6 @@ button with a catalog launch URL only after that listing is public.
   Start with the Grovs guide and propose a useful, reproducible
   [community tutorial](https://community.hetzner.com/). Ask about Cloud Apps inclusion
   before investing in a provider-specific image. Do not invent a `/deploy/grovs` URL.
-- **Easypanel:** submit a native service template to the
-  [template repository](https://github.com/easypanel-io/templates), after adapting
-  domains, persistent storage, migrations and generated credentials.
-- **CapRover:** adapt to its supported Compose subset and test before a PR to
-  [One Click Apps](https://github.com/caprover/one-click-apps). Validate migration
-  ordering and project wildcard routing; importing our Compose unchanged is insufficient.
 - **GitHub Marketplace:** accepts Apps and Actions. A real deployment Action could
   qualify; GHCR images and this Compose repository do not constitute a listing.
   See [GitHub Marketplace](https://docs.github.com/en/apps/github-marketplace/github-marketplace-overview/about-github-marketplace-for-apps).
@@ -105,6 +101,7 @@ links available; don't promise a dofollow link or a ranking improvement.
    **Never snapshot an initialized `/opt/grovs/.env` or populated Docker volumes.**
 7. Submission ID/PR, reviewer feedback, accepted listing URL and the release tested.
 
-The new Azure and cloud-init artifacts have local validation only. No billable
-cloud instances were created for this expansion. Provider image packages and
-live validation evidence still need to be produced before catalog review.
+The Azure, cloud-init and [five catalog packages](../../deploy/catalogs/README.md)
+have local validation only. No billable cloud instances were created for this
+expansion. Image builds, live validation evidence and provider review remain
+pending; no new official catalog listing is claimed.

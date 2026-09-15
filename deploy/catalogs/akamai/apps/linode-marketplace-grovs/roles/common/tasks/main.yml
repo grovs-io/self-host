@@ -1,0 +1,61 @@
+---
+- name: Require Ubuntu 24.04
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_version == '24.04'
+- name: Install operating system prerequisites
+  ansible.builtin.apt:
+    name: [sudo, ufw, curl, ca-certificates, git, openssl]
+    state: present
+    update_cache: true
+- name: Create the operator account
+  ansible.builtin.user:
+    name: "{{ sudo_user_name }}"
+    groups: sudo
+    append: true
+    shell: /bin/bash
+    password_lock: true
+- name: Create operator SSH directory
+  ansible.builtin.file:
+    path: "/home/{{ sudo_user_name }}/.ssh"
+    state: directory
+    owner: "{{ sudo_user_name }}"
+    group: "{{ sudo_user_name }}"
+    mode: '0700'
+- name: Install the operator's public key
+  ansible.builtin.copy:
+    content: "{{ ssh_public_key }}\n"
+    dest: "/home/{{ sudo_user_name }}/.ssh/authorized_keys"
+    owner: "{{ sudo_user_name }}"
+    group: "{{ sudo_user_name }}"
+    mode: '0600'
+- name: Allow key-authenticated operator to administer the server
+  ansible.builtin.copy:
+    content: "{{ sudo_user_name }} ALL=(ALL) NOPASSWD:ALL\n"
+    dest: "/etc/sudoers.d/{{ sudo_user_name }}"
+    mode: '0440'
+    validate: /usr/sbin/visudo -cf %s
+- name: Restrict SSH to public key authentication
+  ansible.builtin.copy:
+    content: "PasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin no\n"
+    dest: /etc/ssh/sshd_config.d/00-grovs.conf
+    mode: '0644'
+  notify: Reload SSH
+- name: Validate complete SSH configuration
+  ansible.builtin.command: /usr/sbin/sshd -t
+  changed_when: false
+- name: Restrict SSH source in the host firewall
+  ansible.builtin.command:
+    argv: [ufw, allow, from, "{{ ssh_source_cidr }}", to, any, port, '22', proto, tcp]
+  register: ssh_rule
+  changed_when: "'Rule added' in ssh_rule.stdout or 'Rules updated' in ssh_rule.stdout"
+- name: Allow HTTP and HTTPS
+  ansible.builtin.command:
+    argv: [ufw, allow, "{{ item }}/tcp"]
+  loop: ['80', '443']
+  register: web_rule
+  changed_when: "'Rule added' in web_rule.stdout or 'Rules updated' in web_rule.stdout"
+- name: Enable host firewall
+  ansible.builtin.command: ufw --force enable
+  changed_when: false

@@ -1,0 +1,22 @@
+---
+- name: Install Grovs Community on a fresh Ubuntu server
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+  any_errors_fatal: true
+  vars:
+    grovs_domain: "{{ lookup('env', 'GROVS_DOMAIN') }}"
+    grovs_admin_email: "{{ lookup('env', 'GROVS_ADMIN_EMAIL') }}"
+    sudo_user_name: "{{ lookup('env', 'SUDO_USER_NAME') }}"
+    ssh_public_key: "{{ lookup('env', 'PUBKEY') }}"
+    ssh_source_cidr: "{{ lookup('env', 'SSH_SOURCE_CIDR') }}"
+  roles:
+    - common
+    - grovs
+    - post
+  handlers:
+    - name: Reload SSH
+      ansible.builtin.service:
+        name: ssh
+        state: reloaded

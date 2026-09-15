@@ -1,0 +1,30 @@
+---
+- name: Read bootstrap credentials without logging their values
+  ansible.builtin.slurp:
+    src: /opt/grovs/.env
+  register: grovs_env
+  no_log: true
+- name: Write administrator credentials for the operator
+  ansible.builtin.copy:
+    content: |
+      Dashboard: https://dashboard.{{ grovs_domain }}
+      {% for line in (grovs_env.content | b64decode).splitlines() %}
+      {% if line.startswith('BOOTSTRAP_ADMIN_') %}
+      {{ line }}
+      {% endif %}
+      {% endfor %}
+    dest: "/home/{{ sudo_user_name }}/.credentials"
+    owner: "{{ sudo_user_name }}"
+    group: "{{ sudo_user_name }}"
+    mode: '0600'
+  no_log: true
+- name: Install login instructions
+  ansible.builtin.copy:
+    content: |
+      Grovs Community: https://www.grovs.io
+      Dashboard: https://dashboard.{{ grovs_domain }}
+      Credentials: /home/{{ sudo_user_name }}/.credentials
+      Set DNS records before opening the dashboard.
+      Guide: https://github.com/grovs-io/self-host/blob/main/docs/deploy/akamai.md
+    dest: /etc/motd
+    mode: '0644'
