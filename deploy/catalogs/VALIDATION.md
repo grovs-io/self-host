@@ -8,6 +8,7 @@ installation, TLS issuance or provider metadata delivery.
 | Repository Python tests | 34 passed, including generated-file freshness, migration failure propagation, secrets, persistence and Ansible input validation |
 | CapRover upstream `validate_apps` and `build` | Passed with the candidate copied into the upstream tree |
 | Easypanel template generation, TypeScript and Zod schema checks | Passed with the candidate copied into the upstream tree |
+| Easypanel playground production build | Passed using Node 22; upstream Next.js 12 fails with this workstation's Node 26 |
 | DigitalOcean Packer recipe | `packer init` and `packer validate` passed with a dummy token; no `build` run |
 | Vultr Packer recipe | `packer init` and `packer validate` passed with a dummy token; no `build` run |
 | Shell scripts | Bash syntax and ShellCheck 0.11.0 passed |

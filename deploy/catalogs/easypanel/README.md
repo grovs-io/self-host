@@ -10,7 +10,8 @@ an Easypanel instance and wildcard HTTPS verification are still pending.
 
 From the self-host repository, regenerate with
 `python3 scripts/generate-panel-catalogs.py`. Copy `grovs/` into `templates/grovs/`
-in a checkout of the upstream repository. From that checkout:
+in a checkout of the upstream repository. Use Node 22 for the upstream Next.js 12
+playground; its production build fails on Node 26. From that checkout:
 
 ```bash
 npm ci

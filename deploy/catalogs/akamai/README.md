@@ -30,8 +30,9 @@ machine and must run only on a new Ubuntu server. Never run it on a workstation.
 
 Follow the [contribution guide](https://github.com/akamai-compute-marketplace/marketplace-apps/blob/main/docs/CONTRIBUTING.md).
 Copy the application and deployment script into the matching upstream folders.
-Pin `GROVS_CATALOG_REF` to a published, reviewed commit containing this package
-before deploying the StackScript. The application independently pins the shared
+The StackScript pins `GROVS_CATALOG_REF` to package commit
+`01d739ebc6b5be4d7d61a097c292b242035e52f9`. Review a new revision before overriding
+it. The application independently pins the shared
 Grovs bootstrap and verifies its SHA-256 checksum.
 
 When cloud testing is authorized, deploy a new Linode using the StackScript and

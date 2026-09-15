@@ -14,9 +14,9 @@ trap 'echo "Grovs marketplace setup failed at line $LINENO" >&2' ERR
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y git python3-venv
-# Candidate packages track main. Pin GROVS_CATALOG_REF to the reviewed commit for a submission.
+# Resolve installer code from a fixed package revision; override only after review.
 git clone --quiet https://github.com/grovs-io/self-host.git "$WORK_DIR/source"
-git -C "$WORK_DIR/source" checkout --quiet --detach "${GROVS_CATALOG_REF:-main}"
+git -C "$WORK_DIR/source" checkout --quiet --detach "${GROVS_CATALOG_REF:-01d739ebc6b5be4d7d61a097c292b242035e52f9}"
 cd "$WORK_DIR/source/deploy/catalogs/akamai/apps/linode-marketplace-grovs"
 python3 -m venv "$WORK_DIR/venv"
 "$WORK_DIR/venv/bin/pip" install --quiet -r requirements.txt
