@@ -15,28 +15,61 @@ under one version (`GROVS_VERSION`). Source: [grovs-io/backend](https://github.c
 The setup generates your secrets and administrator login. You do not need to
 build the application or configure SMTP to sign in.
 
-| Deployment | Start here |
-|---|---|
-| Try locally — no public domain needed | [Local Docker quickstart](docs/deploy/local.md) |
-| Your own Linux server | [Docker Compose guide](docs/deploy/server.md) |
-| Existing Coolify server | [Deploy with Coolify](docs/deploy/coolify.md) |
-| Existing Dokploy server | [Deploy with Dokploy](docs/deploy/dokploy.md) |
-| Existing Easypanel server | [Easypanel template guide (preview)](docs/deploy/easypanel.md) |
-| Existing CapRover server | [CapRover template guide (preview)](docs/deploy/caprover.md) |
-| AWS account | [Launch with CloudFormation](docs/deploy/aws.md) |
-| Google Cloud project | [Open the Cloud Shell deployment](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host&cloudshell_tutorial=deploy%2Fgcp%2Ftutorial.md) · [Guide](docs/deploy/gcp.md) |
-| Azure subscription | [Deploy to Azure](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fgrovs-io%2Fself-host%2Fmain%2Fdeploy%2Fazure%2Fazuredeploy.json) · [Guide](docs/deploy/azure.md) |
-| DigitalOcean account | [Setup guide](docs/deploy/digitalocean.md) |
-| Hetzner account | [Setup guide](docs/deploy/hetzner.md) |
-| Vultr account | [Setup guide](docs/deploy/vultr.md) |
-| Akamai / Linode account | [Setup guide](docs/deploy/akamai.md) |
-| Scaleway account | [Setup guide](docs/deploy/scaleway.md) |
-| Railway account | [Deploy on Railway](https://railway.com/deploy/grovs-community) · [Guide](docs/deploy/railway.md) |
-| Render account | [Deploy on Render](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host) · [Guide](docs/deploy/render.md) |
+### Launch from a template
 
-Coolify/Dokploy use an importable Compose template; their guides include the
-wildcard routing and TLS setup needed for project links. Cloud deployments
-create billable resources in your account. See [deployment options](docs/deploy/README.md) before choosing.
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/grovs-community)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fgrovs-io%2Fself-host%2Fmain%2Fdeploy%2Fazure%2Fazuredeploy.json)
+[![Open in Google Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host&cloudshell_git_branch=main&cloudshell_tutorial=deploy%2Fgcp%2Ftutorial.md)
+
+These buttons open the platform's deployment form or guided setup. Review the
+resources in your own account before deploying, and follow the matching guide
+for domains, credentials and first login.
+
+### All deployment options
+
+| Platform | Deployment method | Open platform or template | Documentation |
+|---|---|---|---|
+| **Docker locally** | Full stack on your laptop | [Local installer](#try-it-on-your-machine-first) | [Local quickstart](docs/deploy/local.md) |
+| **Your Linux server** | Docker Compose with HTTPS | [Run the installer](#deploy) | [Server guide](docs/deploy/server.md) |
+| **Coolify** | Import Compose into your own panel | [Compose template](docker-compose.platform.yml) | [Coolify guide](docs/deploy/coolify.md) |
+| **Dokploy** | Import Compose into your own panel | [Compose template](docker-compose.platform.yml) | [Dokploy guide](docs/deploy/dokploy.md) |
+| **Easypanel** | Manual service-template import · preview | [Easypanel template](deploy/catalogs/easypanel/grovs) | [Easypanel guide](docs/deploy/easypanel.md) |
+| **CapRover** | Manual One Click App import · preview | [CapRover template](deploy/catalogs/caprover/grovs.yml) | [CapRover guide](docs/deploy/caprover.md) |
+| **Railway** | Public Grovs template | [Deploy on Railway](https://railway.com/deploy/grovs-community) | [Railway guide](docs/deploy/railway.md) |
+| **Render** | Blueprint | [Deploy on Render](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host) | [Render guide](docs/deploy/render.md) |
+| **AWS** | Upload the [CloudFormation template](deploy/aws/cloudformation.yaml) | [Open CloudFormation](https://console.aws.amazon.com/cloudformation/home#/stacks/create/template) | [AWS guide](docs/deploy/aws.md) |
+| **Google Cloud** | Guided VM setup in Cloud Shell | [Open Cloud Shell](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host&cloudshell_git_branch=main&cloudshell_tutorial=deploy%2Fgcp%2Ftutorial.md) | [Google Cloud guide](docs/deploy/gcp.md) |
+| **Azure** | ARM template | [Deploy to Azure](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fgrovs-io%2Fself-host%2Fmain%2Fdeploy%2Fazure%2Fazuredeploy.json) | [Azure guide](docs/deploy/azure.md) |
+| **DigitalOcean** | Ubuntu Droplet + Grovs installer | [Create a Droplet](https://cloud.digitalocean.com/droplets/new) | [DigitalOcean guide](docs/deploy/digitalocean.md) |
+| **Hetzner** | Ubuntu Cloud server + Grovs installer | [Open Hetzner Console](https://console.hetzner.com) | [Hetzner guide](docs/deploy/hetzner.md) |
+| **Vultr** | Ubuntu Cloud Compute + Grovs installer | [Create an instance](https://my.vultr.com/deploy/) | [Vultr guide](docs/deploy/vultr.md) |
+| **Akamai / Linode** | Ubuntu Linode + Grovs installer | [Create a Linode](https://cloud.linode.com/linodes/create) | [Akamai / Linode guide](docs/deploy/akamai.md) |
+| **Scaleway** | Ubuntu Instance + Grovs installer | [Open Scaleway Console](https://console.scaleway.com) | [Scaleway guide](docs/deploy/scaleway.md) |
+
+Self-managed panels have their own URLs, so their links above open the template
+to import. Cloud console links open the provider's server-creation flow; the
+guide walks you through installing Grovs. For the shortest server setup, use
+the [Docker Compose installer](#deploy).
+
+Public deployments need your domain and DNS configuration for project links.
+Railway, Render, Easypanel and CapRover also require private S3-compatible object
+storage. Cloud providers bill your account for infrastructure. Browse the
+[online self-hosting docs](https://www.grovs.io/docs/self-hosting/introduction)
+or the [deployment guide index](docs/deploy/README.md).
+
+### Marketplace status
+
+The [Railway template](https://railway.com/deploy/grovs-community) is published;
+live deployment verification is pending. Render's Blueprint and the cloud launch
+links above are available independently of marketplace approval.
+
+**No submissions have been made to the other official catalogs yet.**
+DigitalOcean, Vultr, Akamai / Linode, Easypanel and CapRover have
+[prepared submission packages](deploy/catalogs/README.md) with local checks.
+Coolify and Dokploy currently use Compose imports. See the
+[submission tracker](docs/deploy/marketplaces.md) for remaining validation,
+publisher onboarding and catalog work.
 
 Already installed? Jump to [configuration](#after-install-changing-settings),
 [SDK setup](#configure-the-sdks), [upgrades](#upgrades), [backups](#backups), or
@@ -109,10 +142,10 @@ setup. No SMTP or SSO required. Certificates are issued on the first request to 
 
 ## Try it on your machine first
 
-No domain, no DNS, no TLS. Run the installer and press Enter at the first prompt:
+No public domain or DNS setup needed. Select local mode explicitly:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/main/install.sh | GROVS_DOMAIN=local bash
 ```
 
 It starts the same stack on `lvh.me`, a public name that resolves to `127.0.0.1`, with the

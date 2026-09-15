@@ -74,8 +74,8 @@ aws s3 cp deploy/aws/cloudformation.yaml s3://YOUR_TEMPLATE_BUCKET/grovs/RELEASE
 Configure read access for that template object according to your distribution
 policy; the upload command alone does not make it public. Use the resulting URL
 as the target of an AWS deployment button. It opens the CloudFormation review
-form with the template selected. The README's AWS link currently opens the
-guide, so it does not point at a nonexistent S3 object.
+form with the template selected. The README currently links to CloudFormation
+with instructions to upload the template; it has no prefilled S3 template URL.
 [AWS quick-create documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stacks-quick-create-links.html)
 
 ## Coolify and Dokploy catalogs
