@@ -1,5 +1,7 @@
 # CapRover One Click App package
 
+For installation, start with the [CapRover setup guide](../../../docs/deploy/caprover.md).
+
 `grovs.yml` is a candidate for [CapRover One Click Apps](https://github.com/caprover/one-click-apps).
 It uses CapRover's supported service fields rather than importing the standalone
 Compose stack. Its metadata uses `isOfficial` because the images come from Grovs

@@ -21,6 +21,8 @@ build the application or configure SMTP to sign in.
 | Your own Linux server | [Docker Compose guide](docs/deploy/server.md) |
 | Existing Coolify server | [Deploy with Coolify](docs/deploy/coolify.md) |
 | Existing Dokploy server | [Deploy with Dokploy](docs/deploy/dokploy.md) |
+| Existing Easypanel server | [Easypanel template guide (preview)](docs/deploy/easypanel.md) |
+| Existing CapRover server | [CapRover template guide (preview)](docs/deploy/caprover.md) |
 | AWS account | [Launch with CloudFormation](docs/deploy/aws.md) |
 | Google Cloud project | [Open the Cloud Shell deployment](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host&cloudshell_tutorial=deploy%2Fgcp%2Ftutorial.md) · [Guide](docs/deploy/gcp.md) |
 | Azure subscription | [Deploy to Azure](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fgrovs-io%2Fself-host%2Fmain%2Fdeploy%2Fazure%2Fazuredeploy.json) · [Guide](docs/deploy/azure.md) |

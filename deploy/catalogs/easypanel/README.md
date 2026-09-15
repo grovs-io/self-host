@@ -1,5 +1,7 @@
 # Easypanel template package
 
+For installation, start with the [Easypanel setup guide](../../../docs/deploy/easypanel.md).
+
 `grovs/` is a native template candidate for the
 [Easypanel template repository](https://github.com/easypanel-io/templates).
 It generates seven services from public Grovs images and official database
