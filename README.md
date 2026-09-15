@@ -11,13 +11,13 @@ under one version (`GROVS_VERSION`). Source: [grovs-io/backend](https://github.c
 
 ## Run it yourself
 
-**Try Grovs on your laptop or deploy the Community Edition in your own account.**
+**Try Grovs on your machine or deploy the Community Edition in your own account.**
 The setup generates your secrets and administrator login. You do not need to
 build the application or configure SMTP to sign in.
 
 ### Choose your deployment
 
-[![Docker locally: Run on your laptop](docs/assets/deploy/docker.svg)](#try-it-on-your-machine-first)
+[![Docker locally: Run on your machine](docs/assets/deploy/docker.svg)](#try-it-on-your-machine-first)
 [![Your Linux server: Run the installer](docs/assets/deploy/server.svg)](#deploy)
 [![Coolify: Setup guide](docs/assets/deploy/coolify.svg)](docs/deploy/coolify.md)
 [![Dokploy: Setup guide](docs/assets/deploy/dokploy.svg)](docs/deploy/dokploy.md)
