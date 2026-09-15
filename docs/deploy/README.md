@@ -14,6 +14,12 @@ workers and the dashboard. No Ruby or Node.js build environment is needed.
 | Manage it from an existing Dokploy installation | [Dokploy](dokploy.md) | A connected server and Traefik with wildcard TLS |
 | Create a server in your AWS account | [AWS](aws.md) | AWS billing, deployment permissions and a domain |
 | Create a server in your Google Cloud project | [Google Cloud](gcp.md) | Cloud billing, deployment permissions and a domain |
+| Create a VM in Azure | [Azure](azure.md) | Subscription, SSH key and domain |
+| Run on DigitalOcean | [DigitalOcean](digitalocean.md) | Cloud account, SSH key and domain |
+| Run on Hetzner | [Hetzner](hetzner.md) | Cloud account, SSH key and domain |
+| Run on Vultr | [Vultr](vultr.md) | Cloud account, SSH key and domain |
+| Run on Akamai / Linode | [Akamai / Linode](akamai.md) | Cloud account, SSH key and domain |
+| Run on Scaleway | [Scaleway](scaleway.md) | Cloud account, SSH key and domain |
 | Run services in a Railway project | [Deploy on Railway](https://railway.com/deploy/grovs-community) · [Guide](railway.md) | Railway account, billing, domains and object storage |
 | Run services on Render | [Render Blueprint](render.md) | Render account, billing, domain and object storage |
 

@@ -4,6 +4,9 @@ This is the maintainer checklist for turning the checked-in templates into
 public deployment entry points. Do this for the Community Edition after the
 matching backend/dashboard GHCR release is available.
 
+For additional catalogs, listing copy and outstanding packaging work, see the
+[marketplace submission plan](marketplaces.md).
+
 ## Validate the repository
 
 ```bash
@@ -12,6 +15,7 @@ python3 scripts/generate-paas.py --check
 python3 scripts/generate-railway-template.py --check
 python3 -m unittest discover -s tests -v
 cfn-lint deploy/aws/cloudformation.yaml
+az bicep build --file deploy/azure/main.bicep
 npm --prefix .railway ci
 npm --prefix .railway run check
 npm --prefix .railway test
@@ -114,3 +118,11 @@ login, links, analytics and uploads. See [Creating Railway templates](https://do
 
 The native `.railway/railway.ts` CLI definition remains available for operators
 who prefer reviewing their infrastructure as code.
+
+## Azure and Ubuntu cloud servers
+
+The [Azure button](azure.md) consumes the public `deploy/azure/azuredeploy.json`.
+Recompile it when `main.bicep` or `deploy/vm/bootstrap.sh` changes. The shared
+`scripts/generate-cloud-init.py` embeds the same bootstrap for DigitalOcean,
+Hetzner and Scaleway. Keep the image release and reviewed stack reference in
+sync with the deployment guides. [Microsoft documents the button format](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-to-azure-button).
