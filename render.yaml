@@ -43,7 +43,7 @@
       "type": "web",
       "runtime": "image",
       "image": {
-        "url": "ghcr.io/grovs-io/backend:2.3.0"
+        "url": "ghcr.io/grovs-io/backend:2.3.1"
       },
       "plan": "1c-2g",
       "region": "frankfurt",
@@ -299,7 +299,7 @@
       "type": "worker",
       "runtime": "image",
       "image": {
-        "url": "ghcr.io/grovs-io/backend:2.3.0"
+        "url": "ghcr.io/grovs-io/backend:2.3.1"
       },
       "plan": "1c-2g",
       "region": "frankfurt",
@@ -774,7 +774,7 @@
       "type": "worker",
       "runtime": "image",
       "image": {
-        "url": "ghcr.io/grovs-io/backend:2.3.0"
+        "url": "ghcr.io/grovs-io/backend:2.3.1"
       },
       "plan": "1c-2g",
       "region": "frankfurt",
@@ -1249,7 +1249,7 @@
       "type": "web",
       "runtime": "image",
       "image": {
-        "url": "ghcr.io/grovs-io/dashboard:2.3.0"
+        "url": "ghcr.io/grovs-io/dashboard:2.3.1"
       },
       "plan": "1c-2g",
       "region": "frankfurt",

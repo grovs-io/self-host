@@ -111,7 +111,7 @@
       "name": "web",
       "icon": "https://docs.grovs.io/logo.svg",
       "source": {
-        "image": "ghcr.io/grovs-io/backend:2.3.0"
+        "image": "ghcr.io/grovs-io/backend:2.3.1"
       },
       "build": {},
       "deploy": {
@@ -473,7 +473,7 @@
       "name": "worker-1",
       "icon": "https://docs.grovs.io/logo.svg",
       "source": {
-        "image": "ghcr.io/grovs-io/backend:2.3.0"
+        "image": "ghcr.io/grovs-io/backend:2.3.1"
       },
       "build": {},
       "deploy": {
@@ -836,7 +836,7 @@
       "name": "worker-2",
       "icon": "https://docs.grovs.io/logo.svg",
       "source": {
-        "image": "ghcr.io/grovs-io/backend:2.3.0"
+        "image": "ghcr.io/grovs-io/backend:2.3.1"
       },
       "build": {},
       "deploy": {
@@ -1199,7 +1199,7 @@
       "name": "dashboard",
       "icon": "https://docs.grovs.io/logo.svg",
       "source": {
-        "image": "ghcr.io/grovs-io/dashboard:2.3.0"
+        "image": "ghcr.io/grovs-io/dashboard:2.3.1"
       },
       "build": {},
       "deploy": {
