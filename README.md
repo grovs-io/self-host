@@ -15,16 +15,28 @@ under one version (`GROVS_VERSION`). Source: [grovs-io/backend](https://github.c
 The setup generates your secrets and administrator login. You do not need to
 build the application or configure SMTP to sign in.
 
-### Launch from a template
+### Choose your deployment
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/grovs-community)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host)
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fgrovs-io%2Fself-host%2Fmain%2Fdeploy%2Fazure%2Fazuredeploy.json)
-[![Open in Google Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host&cloudshell_git_branch=main&cloudshell_tutorial=deploy%2Fgcp%2Ftutorial.md)
+[![Docker locally: Run on your laptop](docs/assets/deploy/docker.svg)](#try-it-on-your-machine-first)
+[![Your Linux server: Run the installer](docs/assets/deploy/server.svg)](#deploy)
+[![Coolify: Setup guide](docs/assets/deploy/coolify.svg)](docs/deploy/coolify.md)
+[![Dokploy: Setup guide](docs/assets/deploy/dokploy.svg)](docs/deploy/dokploy.md)
+[![Easypanel: Setup guide](docs/assets/deploy/easypanel.svg)](docs/deploy/easypanel.md)
+[![CapRover: Setup guide](docs/assets/deploy/caprover.svg)](docs/deploy/caprover.md)
+[![Railway: Deploy from template](docs/assets/deploy/railway.svg)](https://railway.com/deploy/grovs-community)
+[![Render: Deploy from Blueprint](docs/assets/deploy/render.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host)
+[![AWS: Open CloudFormation](docs/assets/deploy/aws.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/create/template)
+[![Google Cloud: Open Cloud Shell](docs/assets/deploy/gcp.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host&cloudshell_git_branch=main&cloudshell_tutorial=deploy%2Fgcp%2Ftutorial.md)
+[![Azure: Deploy from template](docs/assets/deploy/azure.svg)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fgrovs-io%2Fself-host%2Fmain%2Fdeploy%2Fazure%2Fazuredeploy.json)
+[![DigitalOcean: Create a Droplet](docs/assets/deploy/digitalocean.svg)](https://cloud.digitalocean.com/droplets/new)
+[![Hetzner: Open Cloud Console](docs/assets/deploy/hetzner.svg)](https://console.hetzner.com)
+[![Vultr: Create an instance](docs/assets/deploy/vultr.svg)](https://my.vultr.com/deploy/)
+[![Akamai / Linode: Create a Linode](docs/assets/deploy/akamai.svg)](https://cloud.linode.com/linodes/create)
+[![Scaleway: Open Cloud Console](docs/assets/deploy/scaleway.svg)](https://console.scaleway.com)
 
-These buttons open the platform's deployment form or guided setup. Review the
-resources in your own account before deploying, and follow the matching guide
-for domains, credentials and first login.
+Choose a platform to open its deployment form, cloud console or setup guide.
+For cloud console options, follow the matching guide below to install Grovs
+after creating your server.
 
 ### All deployment options
 

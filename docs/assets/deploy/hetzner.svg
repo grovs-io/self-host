@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="56" viewBox="0 0 200 56" role="img" aria-labelledby="title">
+<title id="title">Hetzner: Open Cloud Console</title>
+<rect x="0.5" y="0.5" width="199" height="55" rx="8" fill="#171b25" stroke="#394150"/>
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" x="14" y="14" width="28" height="28" color="#ffffff"><path d="M0 0v24h24V0H0zm4.602 4.025h2.244c.509 0 .716.215.716.717v5.64h8.883v-5.64c0-.509.215-.717.717-.717h2.229c.5 0 .71.23.724.717v14.516c0 .509-.215.717-.717.717h-2.23c-.51 0-.717-.215-.717-.717v-5.735H7.562v5.735c0 .516-.215.717-.716.717H4.602c-.51 0-.717-.208-.717-.717V4.742c0-.509.207-.717.717-.717z"></path></svg>
+<g font-family="Arial, Helvetica, sans-serif"><text x="54" y="24" fill="#ffffff" font-size="14" font-weight="600">Hetzner</text><text x="54" y="41" fill="#b8c2d2" font-size="11">Open Cloud Console</text></g>
+</svg>
