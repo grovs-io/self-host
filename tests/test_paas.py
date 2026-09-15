@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from pathlib import Path
 import shlex
 import shutil
@@ -13,6 +14,56 @@ ROOT = Path(__file__).resolve().parents[1]
 class PaasTest(unittest.TestCase):
     def test_generated_files_current(self):
         subprocess.run(["python3", str(ROOT / "scripts/generate-paas.py"), "--check"], check=True)
+        subprocess.run(["python3", str(ROOT / "scripts/generate-railway-template.py"), "--check"], check=True)
+
+    def test_railway_template_references_resolve_without_cycles(self):
+        config = json.loads((ROOT / "deploy/railway/template.json").read_text())
+        services = {s["name"]: s for s in config["services"].values()}
+        graph = {}
+        for name, service in services.items():
+            for key, entry in service["variables"].items():
+                self.assertTrue(entry["description"], (name, key))
+                targets = re.findall(r"\$\{\{([\w-]+)\.([\w_]+)\}\}", entry["defaultValue"])
+                graph[name, key] = targets
+                for target, variable in targets:
+                    self.assertIn(target, services)
+                    if variable != "RAILWAY_PRIVATE_DOMAIN":
+                        self.assertIn(variable, services[target]["variables"])
+        def visit(node, ancestors):
+            self.assertNotIn(node, ancestors, "Circular Railway variable reference")
+            for target in graph.get(node, []):
+                visit(tuple(target), ancestors | {node})
+        for node in graph:
+            visit(node, set())
+
+    def test_railway_template_credentials_have_one_generated_owner(self):
+        config = json.loads((ROOT / "deploy/railway/template.json").read_text())
+        services = {s["name"]: s for s in config["services"].values()}
+        for name, service in services.items():
+            for key, entry in service["variables"].items():
+                if not any(word in key for word in ("PASSWORD", "SECRET", "ENCRYPTION", "API_KEY", "WEBHOOK_KEY", "OAUTH_CLIENT_UID")):
+                    continue
+                value = entry["defaultValue"]
+                self.assertTrue(not value or value.startswith("${{"), (name, key))
+        for role in ("worker-1", "worker-2", "dashboard"):
+            env = services[role]["variables"]
+            self.assertEqual(env["OAUTH_CLIENT_SECRET"]["defaultValue"], "${{web.OAUTH_CLIENT_SECRET}}")
+        for name in ("postgres", "redis", "clickhouse"):
+            key = name.upper() + "_PASSWORD"
+            self.assertIn("secret(64", services[name]["variables"][key]["defaultValue"])
+            self.assertEqual(services["web"]["variables"][key]["defaultValue"], "${{" + name + "." + key + "}}")
+
+    def test_railway_template_keeps_datastores_private_and_persistent(self):
+        services = {s["name"]: s for s in json.loads((ROOT / "deploy/railway/template.json").read_text())["services"].values()}
+        for name, path in {"postgres": "/var/lib/postgresql/data", "redis": "/data", "clickhouse": "/var/lib/clickhouse"}.items():
+            self.assertFalse(services[name]["networking"])
+            self.assertEqual([v["mountPath"] for v in services[name]["volumeMounts"].values()], [path])
+        for role in ("worker-1", "worker-2"):
+            self.assertEqual(services[role]["deploy"]["numReplicas"], 1)
+            self.assertFalse(services[role]["deploy"]["sleepApplication"])
+            self.assertNotIn("preDeployCommand", services[role]["deploy"])
+        self.assertIn("[::]", services["web"]["deploy"]["startCommand"])
+        self.assertTrue(services["web"]["deploy"]["preDeployCommand"])
 
     def test_render_secrets_storage_and_migration_ownership(self):
         config = json.loads((ROOT / "render.yaml").read_text())

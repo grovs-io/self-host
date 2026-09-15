@@ -14,7 +14,7 @@ workers and the dashboard. No Ruby or Node.js build environment is needed.
 | Manage it from an existing Dokploy installation | [Dokploy](dokploy.md) | A connected server and Traefik with wildcard TLS |
 | Create a server in your AWS account | [AWS](aws.md) | AWS billing, deployment permissions and a domain |
 | Create a server in your Google Cloud project | [Google Cloud](gcp.md) | Cloud billing, deployment permissions and a domain |
-| Run services in a Railway project | [Railway](railway.md) | Railway CLI, billing, domain and object storage |
+| Run services in a Railway project | [Deploy on Railway](https://railway.com/deploy/grovs-community) · [Guide](railway.md) | Railway account, billing, domains and object storage |
 | Run services on Render | [Render Blueprint](render.md) | Render account, billing, domain and object storage |
 
 **For the shortest server setup, choose Docker Compose.** Coolify and Dokploy

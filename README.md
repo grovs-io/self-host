@@ -23,7 +23,7 @@ build the application or configure SMTP to sign in.
 | Existing Dokploy server | [Deploy with Dokploy](docs/deploy/dokploy.md) |
 | AWS account | [Launch with CloudFormation](docs/deploy/aws.md) |
 | Google Cloud project | [Open the Cloud Shell deployment](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host&cloudshell_tutorial=deploy%2Fgcp%2Ftutorial.md) · [Guide](docs/deploy/gcp.md) |
-| Railway project | [Deploy with Railway IaC](docs/deploy/railway.md) |
+| Railway account | [Deploy on Railway](https://railway.com/deploy/grovs-community) · [Guide](docs/deploy/railway.md) |
 | Render account | [Deploy on Render](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fgrovs-io%2Fself-host) · [Guide](docs/deploy/render.md) |
 
 Coolify/Dokploy use an importable Compose template; their guides include the

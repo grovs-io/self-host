@@ -9,6 +9,7 @@ matching backend/dashboard GHCR release is available.
 ```bash
 python3 scripts/generate-platform-compose.py --check
 python3 scripts/generate-paas.py --check
+python3 scripts/generate-railway-template.py --check
 python3 -m unittest discover -s tests -v
 cfn-lint deploy/aws/cloudformation.yaml
 npm --prefix .railway ci
@@ -92,10 +93,24 @@ The Render deploy link reads the root `render.yaml` from the public repository.
 Publish it with the matching images, test the complete domain/storage/login flow,
 and then advertise it as verified. [Render button documentation](https://render.com/docs/deploy-to-render)
 
-Railway's IaC definition is usable through its CLI. A marketplace button still
-requires creating and publishing a Railway template. Follow the
-[Railway setup guide](railway.md) to deploy a project, then select **Project
-Settings → Generate Template from Project**. Replace literal secrets with
-template-generated values and service references, and test that two fresh
-deployments receive different secrets. See [Creating Railway templates](https://docs.railway.com/templates/create). Add the actual published template URL to the README
-and documentation site after this check.
+The public Railway template is [Grovs Community](https://railway.com/deploy/grovs-community)
+(template ID `389e9618-42d2-4e0e-9462-bd9a6ba85bf7`). Its source is
+`deploy/railway/template.json`, generated from the checked-in defaults and shared
+PaaS commands without reading a private `.env`:
+
+```bash
+python3 scripts/generate-railway-template.py
+python3 scripts/generate-railway-template.py --check
+```
+
+Update the services in the Railway workspace template editor and apply the
+changes to the existing template to preserve its public URL. Keep the overview
+in `deploy/railway/README.md` synchronized with the listing. Required user inputs
+have descriptions; generated secrets use Railway functions and other services
+reference their owner. Publishing was completed without a live deployment;
+Railway approval/verification is separate from publication. Before advertising
+live verification, deploy twice and check independent secrets, migrations, DNS,
+login, links, analytics and uploads. See [Creating Railway templates](https://docs.railway.com/templates/create).
+
+The native `.railway/railway.ts` CLI definition remains available for operators
+who prefer reviewing their infrastructure as code.

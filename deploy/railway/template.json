@@ -1,0 +1,1247 @@
+{
+  "services": {
+    "647f4a47-10a4-506e-bee4-9d371d653bd4": {
+      "name": "postgres",
+      "icon": "https://devicons.railway.app/i/postgresql.svg",
+      "source": {
+        "image": "postgres:16-alpine"
+      },
+      "build": {},
+      "deploy": {
+        "numReplicas": 1,
+        "sleepApplication": false,
+        "restartPolicyType": "ALWAYS",
+        "requiredMountPath": "/var/lib/postgresql/data"
+      },
+      "variables": {
+        "POSTGRES_USER": {
+          "defaultValue": "grovs",
+          "description": "Grovs PostgreSQL database user.",
+          "isOptional": false
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "grovs_production",
+          "description": "Grovs PostgreSQL database name.",
+          "isOptional": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "PGDATA": {
+          "defaultValue": "/var/lib/postgresql/data/pgdata",
+          "description": "PostgreSQL data directory inside the persistent volume.",
+          "isOptional": false
+        }
+      },
+      "networking": {},
+      "volumeMounts": {
+        "647f4a47-10a4-506e-bee4-9d371d653bd4": {
+          "mountPath": "/var/lib/postgresql/data"
+        }
+      }
+    },
+    "3de14aa7-03d1-561b-966c-bb02f6c6a95d": {
+      "name": "redis",
+      "icon": "https://devicons.railway.app/i/redis.svg",
+      "source": {
+        "image": "redis:7-alpine"
+      },
+      "build": {},
+      "deploy": {
+        "numReplicas": 1,
+        "sleepApplication": false,
+        "restartPolicyType": "ALWAYS",
+        "startCommand": "sh -ec 'exec redis-server --appendonly yes --maxmemory-policy noeviction --requirepass \"$REDIS_PASSWORD\"'",
+        "requiredMountPath": "/data"
+      },
+      "variables": {
+        "REDIS_PASSWORD": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        }
+      },
+      "networking": {},
+      "volumeMounts": {
+        "3de14aa7-03d1-561b-966c-bb02f6c6a95d": {
+          "mountPath": "/data"
+        }
+      }
+    },
+    "6c890386-8c6d-5e2b-aff3-243c614c73ce": {
+      "name": "clickhouse",
+      "icon": "https://devicons.railway.app/i/clickhouse.svg",
+      "source": {
+        "image": "clickhouse/clickhouse-server:25.3"
+      },
+      "build": {},
+      "deploy": {
+        "numReplicas": 1,
+        "sleepApplication": false,
+        "restartPolicyType": "ALWAYS",
+        "requiredMountPath": "/var/lib/clickhouse"
+      },
+      "variables": {
+        "CLICKHOUSE_DB": {
+          "defaultValue": "grovs_production",
+          "description": "Grovs ClickHouse database name.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_USER": {
+          "defaultValue": "grovs",
+          "description": "Grovs ClickHouse database user.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_PASSWORD": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        }
+      },
+      "networking": {},
+      "volumeMounts": {
+        "6c890386-8c6d-5e2b-aff3-243c614c73ce": {
+          "mountPath": "/var/lib/clickhouse"
+        }
+      }
+    },
+    "5e75d272-527a-5d61-9831-db220e7a793f": {
+      "name": "web",
+      "icon": "https://docs.grovs.io/logo.svg",
+      "source": {
+        "image": "ghcr.io/grovs-io/backend:2.3.0"
+      },
+      "build": {},
+      "deploy": {
+        "numReplicas": 1,
+        "sleepApplication": false,
+        "restartPolicyType": "ALWAYS",
+        "startCommand": "bash -ec '#!/usr/bin/env bash\n# Sourced into the commands embedded in Railway/Render configuration.\n# No files from this repository need to be present in the application image.\nset -eu\n: \"${SERVER_HOST:?Set your app domain}\"\n: \"${DOMAIN_LIVE:?Set your production links domain}\"\n: \"${DOMAIN_TEST:?Set your test links domain}\"\n: \"${AWS_S3_KEY_ID:?Set object storage credentials}\"\n: \"${AWS_S3_ACCESS_KEY:?Set object storage credentials}\"\n: \"${AWS_S3_REGION:?Set your bucket region}\"\n: \"${AWS_S3_BUCKET:?Set your bucket name}\"\nexport ACTIVE_STORAGE_SERVICE=amazon\nexport SERVER_HOST_PROTOCOL=https:// REACT_HOST_PROTOCOL=https://\nexport REACT_HOST=\"dashboard.$SERVER_HOST\"\nexport API_HOST=\"api.$SERVER_HOST\" SDK_HOST=\"sdk.$SERVER_HOST\"\nexport DASHBOARD_HOST=\"$REACT_HOST\" MCP_HOST=\"mcp.$SERVER_HOST\" GO_HOST=\"go.$SERVER_HOST\"\nexport PREVIEW_HOST=\"preview.$SERVER_HOST\"\nexport LINKS_PROD_HOST=\"links.$DOMAIN_LIVE\" LINKS_TEST_HOST=\"links.$DOMAIN_TEST\"\nexport PREVIEW_BASE_URL=\"https://preview.$SERVER_HOST\"\nexport MCP_CONSENT_URL=\"https://dashboard.$SERVER_HOST/mcp/authorize\"\nexport S3_ASSET_PREFIX=\"https://api.$SERVER_HOST\"\nencode_password() {\n  ruby -ruri -e '\"'\"'print URI.encode_www_form_component(ENV.fetch(ARGV.fetch(0))).gsub(\"+\", \"%20\")'\"'\"' \"$1\"\n}\nif [ -z \"${DATABASE_URL:-}\" ]; then\n  : \"${POSTGRES_HOST:?Set the private PostgreSQL host}\"\n  DATABASE_URL=\"postgres://grovs:$(encode_password POSTGRES_PASSWORD)@$POSTGRES_HOST:5432/grovs_production\"\n  export DATABASE_URL\nfi\nif [ -z \"${REDIS_URL:-}\" ]; then\n  : \"${REDIS_HOST:?Set the private Redis host}\"\n  REDIS_URL=\"redis://:$(encode_password REDIS_PASSWORD)@$REDIS_HOST:6379/0\"\n  export REDIS_URL\nfi\nif [ -z \"${CLICKHOUSE_URL:-}\" ]; then\n  : \"${CLICKHOUSE_HOST:?Set the private ClickHouse host}\"\n  : \"${CLICKHOUSE_PASSWORD:?Set the ClickHouse password}\"\n  ENCODED_PASSWORD=$(encode_password CLICKHOUSE_PASSWORD)\n  export CLICKHOUSE_URL=\"http://grovs:$ENCODED_PASSWORD@$CLICKHOUSE_HOST:8123\"\nfi\n\nwait_for_http() {\n  local attempt\n  for ((attempt=0; attempt<120; attempt++)); do\n    if curl --fail --silent --max-time 5 \"$1\" >/dev/null; then return 0; fi\n    sleep 5\n  done\n  echo \"Dependency did not become healthy within the startup window.\" >&2\n  return 1\n}\n\nexec bundle exec puma -b \"tcp://[::]:${PORT:-3000}\"'",
+        "healthcheckPath": "/up",
+        "healthcheckTimeout": 600,
+        "preDeployCommand": [
+          "bash -ec '#!/usr/bin/env bash\n# Sourced into the commands embedded in Railway/Render configuration.\n# No files from this repository need to be present in the application image.\nset -eu\n: \"${SERVER_HOST:?Set your app domain}\"\n: \"${DOMAIN_LIVE:?Set your production links domain}\"\n: \"${DOMAIN_TEST:?Set your test links domain}\"\n: \"${AWS_S3_KEY_ID:?Set object storage credentials}\"\n: \"${AWS_S3_ACCESS_KEY:?Set object storage credentials}\"\n: \"${AWS_S3_REGION:?Set your bucket region}\"\n: \"${AWS_S3_BUCKET:?Set your bucket name}\"\nexport ACTIVE_STORAGE_SERVICE=amazon\nexport SERVER_HOST_PROTOCOL=https:// REACT_HOST_PROTOCOL=https://\nexport REACT_HOST=\"dashboard.$SERVER_HOST\"\nexport API_HOST=\"api.$SERVER_HOST\" SDK_HOST=\"sdk.$SERVER_HOST\"\nexport DASHBOARD_HOST=\"$REACT_HOST\" MCP_HOST=\"mcp.$SERVER_HOST\" GO_HOST=\"go.$SERVER_HOST\"\nexport PREVIEW_HOST=\"preview.$SERVER_HOST\"\nexport LINKS_PROD_HOST=\"links.$DOMAIN_LIVE\" LINKS_TEST_HOST=\"links.$DOMAIN_TEST\"\nexport PREVIEW_BASE_URL=\"https://preview.$SERVER_HOST\"\nexport MCP_CONSENT_URL=\"https://dashboard.$SERVER_HOST/mcp/authorize\"\nexport S3_ASSET_PREFIX=\"https://api.$SERVER_HOST\"\nencode_password() {\n  ruby -ruri -e '\"'\"'print URI.encode_www_form_component(ENV.fetch(ARGV.fetch(0))).gsub(\"+\", \"%20\")'\"'\"' \"$1\"\n}\nif [ -z \"${DATABASE_URL:-}\" ]; then\n  : \"${POSTGRES_HOST:?Set the private PostgreSQL host}\"\n  DATABASE_URL=\"postgres://grovs:$(encode_password POSTGRES_PASSWORD)@$POSTGRES_HOST:5432/grovs_production\"\n  export DATABASE_URL\nfi\nif [ -z \"${REDIS_URL:-}\" ]; then\n  : \"${REDIS_HOST:?Set the private Redis host}\"\n  REDIS_URL=\"redis://:$(encode_password REDIS_PASSWORD)@$REDIS_HOST:6379/0\"\n  export REDIS_URL\nfi\nif [ -z \"${CLICKHOUSE_URL:-}\" ]; then\n  : \"${CLICKHOUSE_HOST:?Set the private ClickHouse host}\"\n  : \"${CLICKHOUSE_PASSWORD:?Set the ClickHouse password}\"\n  ENCODED_PASSWORD=$(encode_password CLICKHOUSE_PASSWORD)\n  export CLICKHOUSE_URL=\"http://grovs:$ENCODED_PASSWORD@$CLICKHOUSE_HOST:8123\"\nfi\n\nwait_for_http() {\n  local attempt\n  for ((attempt=0; attempt<120; attempt++)); do\n    if curl --fail --silent --max-time 5 \"$1\" >/dev/null; then return 0; fi\n    sleep 5\n  done\n  echo \"Dependency did not become healthy within the startup window.\" >&2\n  return 1\n}\n\nwait_for_http \"http://$CLICKHOUSE_HOST:8123/ping\"\nbin/rails db:prepare && bin/rails db:seed && bin/rails clickhouse:setup'"
+        ]
+      },
+      "variables": {
+        "SERVER_HOST_PROTOCOL": {
+          "defaultValue": "https://",
+          "description": "Public backend URL protocol.",
+          "isOptional": false
+        },
+        "REACT_HOST_PROTOCOL": {
+          "defaultValue": "https://",
+          "description": "Public dashboard URL protocol.",
+          "isOptional": false
+        },
+        "DOMAIN_LIVE": {
+          "defaultValue": "",
+          "description": "Production links base domain, for example links.example.com.",
+          "isOptional": false
+        },
+        "DOMAIN_TEST": {
+          "defaultValue": "",
+          "description": "Test links base domain, for example test.links.example.com.",
+          "isOptional": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "grovs",
+          "description": "Grovs PostgreSQL database user.",
+          "isOptional": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{postgres.POSTGRES_PASSWORD}}",
+          "description": "Shared reference to postgres.POSTGRES_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "grovs_production",
+          "description": "Grovs PostgreSQL database name.",
+          "isOptional": false
+        },
+        "POSTGRES_MAX_CONNECTIONS": {
+          "defaultValue": "200",
+          "description": "Connection budget setting from the Compose defaults; Railway PostgreSQL tuning is separate.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_PASSWORD": {
+          "defaultValue": "${{clickhouse.CLICKHOUSE_PASSWORD}}",
+          "description": "Shared reference to clickhouse.CLICKHOUSE_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_WRITE_ENABLED": {
+          "defaultValue": "true",
+          "description": "Write analytics events to ClickHouse.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_READ_ENABLED": {
+          "defaultValue": "true",
+          "description": "Read analytics events from ClickHouse.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_PRIMARY": {
+          "defaultValue": "true",
+          "description": "Use ClickHouse as the primary event store.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_ANALYTICS_ROLLUPS_READ_ENABLED": {
+          "defaultValue": "true",
+          "description": "Read pre-aggregated ClickHouse analytics.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_ATTRIBUTION_READ_ENABLED": {
+          "defaultValue": "true",
+          "description": "Read attribution data from ClickHouse.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_LINK_DIMENSIONS_READ_ENABLED": {
+          "defaultValue": "true",
+          "description": "Read link dimensions from ClickHouse.",
+          "isOptional": false
+        },
+        "REVENUE_READS_FROM_LEDGER": {
+          "defaultValue": "true",
+          "description": "Read purchase revenue from the event ledger.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_ROLLUP_FAST_LANE": {
+          "defaultValue": "true",
+          "description": "Enable the fast path for analytics rollups.",
+          "isOptional": false
+        },
+        "DASHBOARD_CACHE_TTL_SECONDS": {
+          "defaultValue": "60",
+          "description": "Dashboard result cache lifetime in seconds.",
+          "isOptional": false
+        },
+        "PG_SHADOW_WRITES": {
+          "defaultValue": "false",
+          "description": "Mirror event writes to PostgreSQL; disabled for ClickHouse-primary storage.",
+          "isOptional": false
+        },
+        "WEB_CONCURRENCY": {
+          "defaultValue": "2",
+          "description": "Number of Puma web processes.",
+          "isOptional": false
+        },
+        "RAILS_MAX_THREADS": {
+          "defaultValue": "5",
+          "description": "Maximum threads per web process.",
+          "isOptional": false
+        },
+        "RAILS_DB_POOL": {
+          "defaultValue": "10",
+          "description": "Database connections available per process.",
+          "isOptional": false
+        },
+        "SIDEKIQ_EVENTS_CONCURRENCY": {
+          "defaultValue": "10",
+          "description": "Concurrent jobs in the event worker.",
+          "isOptional": false
+        },
+        "ACTIVE_STORAGE_SERVICE": {
+          "defaultValue": "amazon",
+          "description": "Use S3 storage shared by the API and workers.",
+          "isOptional": false
+        },
+        "SECRET_KEY_BASE": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "ADMIN_API_KEY": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "DIAGNOSTICS_API_KEY": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "SENT_QUOTAS_WEBHOOK_KEY": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "PUBLIC_GO_PROJECT_IDENTIFIER": {
+          "defaultValue": "go-self-hosted",
+          "description": "Identifier for the built-in public redirect project.",
+          "isOptional": false
+        },
+        "OAUTH_CLIENT_UID": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "OAUTH_CLIENT_SECRET": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "BOOTSTRAP_ADMIN_EMAIL": {
+          "defaultValue": "",
+          "description": "Email address for the first administrator.",
+          "isOptional": false
+        },
+        "BOOTSTRAP_ADMIN_PASSWORD": {
+          "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+          "description": "Generated uniquely for this deployment.",
+          "isOptional": false
+        },
+        "DEFAULT_LOGO_URL": {
+          "defaultValue": "https://appssemble-assets.s3.eu-north-1.amazonaws.com/linksquared/logo-square-new.svg",
+          "description": "Default app icon on link landing pages.",
+          "isOptional": false
+        },
+        "DEFAULT_SOCIAL_PREVIEW_URL": {
+          "defaultValue": "https://appssemble-assets.s3.eu-north-1.amazonaws.com/linksquared/social-media-placeholder.jpg",
+          "description": "Default image for shared links.",
+          "isOptional": false
+        },
+        "DEFAULT_LINK_TITLE": {
+          "defaultValue": "grovs",
+          "description": "Default link landing-page title.",
+          "isOptional": false
+        },
+        "DEFAULT_LINK_SUBTITLE": {
+          "defaultValue": "Dynamic links, attributions, and referrals across mobile and web platforms.",
+          "description": "Default link landing-page description.",
+          "isOptional": false
+        },
+        "MAILER_DELIVERY_METHOD": {
+          "defaultValue": "",
+          "description": "Leave empty to disable email; configure SMTP to enable it.",
+          "isOptional": true
+        },
+        "SMTP_ADDRESS": {
+          "defaultValue": "smtp.example.com",
+          "description": "SMTP server hostname; only used when email is enabled.",
+          "isOptional": false
+        },
+        "SMTP_PORT": {
+          "defaultValue": "587",
+          "description": "SMTP server port.",
+          "isOptional": false
+        },
+        "SMTP_USERNAME": {
+          "defaultValue": "",
+          "description": "SMTP authentication username, if required.",
+          "isOptional": true
+        },
+        "SMTP_PASSWORD": {
+          "defaultValue": "",
+          "description": "SMTP authentication password, if required.",
+          "isOptional": true
+        },
+        "SMTP_AUTHENTICATION": {
+          "defaultValue": "plain",
+          "description": "SMTP authentication mechanism.",
+          "isOptional": false
+        },
+        "SMTP_ENABLE_STARTTLS_AUTO": {
+          "defaultValue": "true",
+          "description": "Use STARTTLS when supported by the SMTP server.",
+          "isOptional": false
+        },
+        "SERVER_HOST": {
+          "defaultValue": "",
+          "description": "App base domain, for example grovs.example.com; no https:// or path.",
+          "isOptional": false
+        },
+        "AWS_S3_KEY_ID": {
+          "defaultValue": "",
+          "description": "Access key for your private S3-compatible bucket.",
+          "isOptional": false
+        },
+        "AWS_S3_ACCESS_KEY": {
+          "defaultValue": "",
+          "description": "Secret access key for your private bucket.",
+          "isOptional": false
+        },
+        "AWS_S3_REGION": {
+          "defaultValue": "",
+          "description": "Bucket region, for example eu-north-1.",
+          "isOptional": false
+        },
+        "AWS_S3_BUCKET": {
+          "defaultValue": "",
+          "description": "Private bucket name shared by API and workers.",
+          "isOptional": false
+        },
+        "S3_ENDPOINT": {
+          "defaultValue": "",
+          "description": "Optional override for S3-compatible storage.",
+          "isOptional": true
+        },
+        "S3_FORCE_PATH_STYLE": {
+          "defaultValue": "",
+          "description": "Optional override for S3-compatible storage.",
+          "isOptional": true
+        },
+        "RAILS_ENV": {
+          "defaultValue": "production",
+          "description": "Run Rails in production mode.",
+          "isOptional": false
+        },
+        "GROVS_SELF_HOSTED": {
+          "defaultValue": "true",
+          "description": "Enable self-hosted configuration and bootstrap login.",
+          "isOptional": false
+        },
+        "GROVS_EE": {
+          "defaultValue": "false",
+          "description": "Keep false for the Community edition.",
+          "isOptional": false
+        },
+        "RAILS_LOG_TO_STDOUT": {
+          "defaultValue": "true",
+          "description": "Send Rails logs to Railway's log viewer.",
+          "isOptional": false
+        },
+        "RAILS_SERVE_STATIC_FILES": {
+          "defaultValue": "true",
+          "description": "Serve the backend's bundled static assets.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_DATABASE": {
+          "defaultValue": "grovs_production",
+          "description": "Analytics database used by the application.",
+          "isOptional": false
+        },
+        "PORT": {
+          "defaultValue": "3000",
+          "description": "HTTP listening port. Keep at 3000 to match Railway networking.",
+          "isOptional": false
+        },
+        "SMTP_DOMAIN": {
+          "defaultValue": "${{web.SERVER_HOST}}",
+          "description": "Shared reference to web.SERVER_HOST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "MAILER_FROM": {
+          "defaultValue": "Grovs <noreply@${{web.SERVER_HOST}}>",
+          "description": "Sender address used for outgoing Grovs emails.",
+          "isOptional": false
+        },
+        "POSTGRES_HOST": {
+          "defaultValue": "${{postgres.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Shared reference to postgres.RAILWAY_PRIVATE_DOMAIN; keep in sync with its source.",
+          "isOptional": false
+        },
+        "REDIS_HOST": {
+          "defaultValue": "${{redis.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Shared reference to redis.RAILWAY_PRIVATE_DOMAIN; keep in sync with its source.",
+          "isOptional": false
+        },
+        "REDIS_PASSWORD": {
+          "defaultValue": "${{redis.REDIS_PASSWORD}}",
+          "description": "Shared reference to redis.REDIS_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_HOST": {
+          "defaultValue": "${{clickhouse.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Shared reference to clickhouse.RAILWAY_PRIVATE_DOMAIN; keep in sync with its source.",
+          "isOptional": false
+        }
+      },
+      "networking": {
+        "serviceDomains": {
+          "<hasDomain>:3000": {}
+        }
+      },
+      "volumeMounts": {}
+    },
+    "5b77f60b-d3d1-540c-bc1d-cac30c0fe17b": {
+      "name": "worker-1",
+      "icon": "https://docs.grovs.io/logo.svg",
+      "source": {
+        "image": "ghcr.io/grovs-io/backend:2.3.0"
+      },
+      "build": {},
+      "deploy": {
+        "numReplicas": 1,
+        "sleepApplication": false,
+        "restartPolicyType": "ALWAYS",
+        "startCommand": "bash -ec '#!/usr/bin/env bash\n# Sourced into the commands embedded in Railway/Render configuration.\n# No files from this repository need to be present in the application image.\nset -eu\n: \"${SERVER_HOST:?Set your app domain}\"\n: \"${DOMAIN_LIVE:?Set your production links domain}\"\n: \"${DOMAIN_TEST:?Set your test links domain}\"\n: \"${AWS_S3_KEY_ID:?Set object storage credentials}\"\n: \"${AWS_S3_ACCESS_KEY:?Set object storage credentials}\"\n: \"${AWS_S3_REGION:?Set your bucket region}\"\n: \"${AWS_S3_BUCKET:?Set your bucket name}\"\nexport ACTIVE_STORAGE_SERVICE=amazon\nexport SERVER_HOST_PROTOCOL=https:// REACT_HOST_PROTOCOL=https://\nexport REACT_HOST=\"dashboard.$SERVER_HOST\"\nexport API_HOST=\"api.$SERVER_HOST\" SDK_HOST=\"sdk.$SERVER_HOST\"\nexport DASHBOARD_HOST=\"$REACT_HOST\" MCP_HOST=\"mcp.$SERVER_HOST\" GO_HOST=\"go.$SERVER_HOST\"\nexport PREVIEW_HOST=\"preview.$SERVER_HOST\"\nexport LINKS_PROD_HOST=\"links.$DOMAIN_LIVE\" LINKS_TEST_HOST=\"links.$DOMAIN_TEST\"\nexport PREVIEW_BASE_URL=\"https://preview.$SERVER_HOST\"\nexport MCP_CONSENT_URL=\"https://dashboard.$SERVER_HOST/mcp/authorize\"\nexport S3_ASSET_PREFIX=\"https://api.$SERVER_HOST\"\nencode_password() {\n  ruby -ruri -e '\"'\"'print URI.encode_www_form_component(ENV.fetch(ARGV.fetch(0))).gsub(\"+\", \"%20\")'\"'\"' \"$1\"\n}\nif [ -z \"${DATABASE_URL:-}\" ]; then\n  : \"${POSTGRES_HOST:?Set the private PostgreSQL host}\"\n  DATABASE_URL=\"postgres://grovs:$(encode_password POSTGRES_PASSWORD)@$POSTGRES_HOST:5432/grovs_production\"\n  export DATABASE_URL\nfi\nif [ -z \"${REDIS_URL:-}\" ]; then\n  : \"${REDIS_HOST:?Set the private Redis host}\"\n  REDIS_URL=\"redis://:$(encode_password REDIS_PASSWORD)@$REDIS_HOST:6379/0\"\n  export REDIS_URL\nfi\nif [ -z \"${CLICKHOUSE_URL:-}\" ]; then\n  : \"${CLICKHOUSE_HOST:?Set the private ClickHouse host}\"\n  : \"${CLICKHOUSE_PASSWORD:?Set the ClickHouse password}\"\n  ENCODED_PASSWORD=$(encode_password CLICKHOUSE_PASSWORD)\n  export CLICKHOUSE_URL=\"http://grovs:$ENCODED_PASSWORD@$CLICKHOUSE_HOST:8123\"\nfi\n\nwait_for_http() {\n  local attempt\n  for ((attempt=0; attempt<120; attempt++)); do\n    if curl --fail --silent --max-time 5 \"$1\" >/dev/null; then return 0; fi\n    sleep 5\n  done\n  echo \"Dependency did not become healthy within the startup window.\" >&2\n  return 1\n}\n\nwait_for_http \"http://$WEB_HOST:${WEB_PORT:-3000}/up\"\npids=()\ntrap '\"'\"'kill \"${pids[@]}\" 2>/dev/null || true'\"'\"' EXIT\ntrap '\"'\"'exit 143'\"'\"' TERM INT\nbundle exec sidekiq -C config/sidekiq_scheduler.yml &\npids+=($!)\nbundle exec sidekiq -C config/sidekiq_worker.yml &\npids+=($!)\nbundle exec sidekiq -C config/sidekiq_batch.yml &\npids+=($!)\nwait -n\n'"
+      },
+      "variables": {
+        "SERVER_HOST_PROTOCOL": {
+          "defaultValue": "${{web.SERVER_HOST_PROTOCOL}}",
+          "description": "Shared reference to web.SERVER_HOST_PROTOCOL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "REACT_HOST_PROTOCOL": {
+          "defaultValue": "${{web.REACT_HOST_PROTOCOL}}",
+          "description": "Shared reference to web.REACT_HOST_PROTOCOL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DOMAIN_LIVE": {
+          "defaultValue": "${{web.DOMAIN_LIVE}}",
+          "description": "Shared reference to web.DOMAIN_LIVE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DOMAIN_TEST": {
+          "defaultValue": "${{web.DOMAIN_TEST}}",
+          "description": "Shared reference to web.DOMAIN_TEST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "${{web.POSTGRES_USER}}",
+          "description": "Shared reference to web.POSTGRES_USER; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{web.POSTGRES_PASSWORD}}",
+          "description": "Shared reference to web.POSTGRES_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "${{web.POSTGRES_DB}}",
+          "description": "Shared reference to web.POSTGRES_DB; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_MAX_CONNECTIONS": {
+          "defaultValue": "${{web.POSTGRES_MAX_CONNECTIONS}}",
+          "description": "Shared reference to web.POSTGRES_MAX_CONNECTIONS; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_PASSWORD": {
+          "defaultValue": "${{web.CLICKHOUSE_PASSWORD}}",
+          "description": "Shared reference to web.CLICKHOUSE_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_WRITE_ENABLED": {
+          "defaultValue": "${{web.CLICKHOUSE_WRITE_ENABLED}}",
+          "description": "Shared reference to web.CLICKHOUSE_WRITE_ENABLED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_READ_ENABLED": {
+          "defaultValue": "${{web.CLICKHOUSE_READ_ENABLED}}",
+          "description": "Shared reference to web.CLICKHOUSE_READ_ENABLED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_PRIMARY": {
+          "defaultValue": "${{web.CLICKHOUSE_PRIMARY}}",
+          "description": "Shared reference to web.CLICKHOUSE_PRIMARY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_ANALYTICS_ROLLUPS_READ_ENABLED": {
+          "defaultValue": "${{web.CLICKHOUSE_ANALYTICS_ROLLUPS_READ_ENABLED}}",
+          "description": "Shared reference to web.CLICKHOUSE_ANALYTICS_ROLLUPS_READ_ENABLED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_ATTRIBUTION_READ_ENABLED": {
+          "defaultValue": "${{web.CLICKHOUSE_ATTRIBUTION_READ_ENABLED}}",
+          "description": "Shared reference to web.CLICKHOUSE_ATTRIBUTION_READ_ENABLED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_LINK_DIMENSIONS_READ_ENABLED": {
+          "defaultValue": "${{web.CLICKHOUSE_LINK_DIMENSIONS_READ_ENABLED}}",
+          "description": "Shared reference to web.CLICKHOUSE_LINK_DIMENSIONS_READ_ENABLED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "REVENUE_READS_FROM_LEDGER": {
+          "defaultValue": "${{web.REVENUE_READS_FROM_LEDGER}}",
+          "description": "Shared reference to web.REVENUE_READS_FROM_LEDGER; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_ROLLUP_FAST_LANE": {
+          "defaultValue": "${{web.CLICKHOUSE_ROLLUP_FAST_LANE}}",
+          "description": "Shared reference to web.CLICKHOUSE_ROLLUP_FAST_LANE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DASHBOARD_CACHE_TTL_SECONDS": {
+          "defaultValue": "${{web.DASHBOARD_CACHE_TTL_SECONDS}}",
+          "description": "Shared reference to web.DASHBOARD_CACHE_TTL_SECONDS; keep in sync with its source.",
+          "isOptional": false
+        },
+        "PG_SHADOW_WRITES": {
+          "defaultValue": "${{web.PG_SHADOW_WRITES}}",
+          "description": "Shared reference to web.PG_SHADOW_WRITES; keep in sync with its source.",
+          "isOptional": false
+        },
+        "WEB_CONCURRENCY": {
+          "defaultValue": "${{web.WEB_CONCURRENCY}}",
+          "description": "Shared reference to web.WEB_CONCURRENCY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "RAILS_MAX_THREADS": {
+          "defaultValue": "${{web.RAILS_MAX_THREADS}}",
+          "description": "Shared reference to web.RAILS_MAX_THREADS; keep in sync with its source.",
+          "isOptional": false
+        },
+        "RAILS_DB_POOL": {
+          "defaultValue": "${{web.RAILS_DB_POOL}}",
+          "description": "Shared reference to web.RAILS_DB_POOL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SIDEKIQ_EVENTS_CONCURRENCY": {
+          "defaultValue": "${{web.SIDEKIQ_EVENTS_CONCURRENCY}}",
+          "description": "Shared reference to web.SIDEKIQ_EVENTS_CONCURRENCY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "ACTIVE_STORAGE_SERVICE": {
+          "defaultValue": "${{web.ACTIVE_STORAGE_SERVICE}}",
+          "description": "Shared reference to web.ACTIVE_STORAGE_SERVICE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SECRET_KEY_BASE": {
+          "defaultValue": "${{web.SECRET_KEY_BASE}}",
+          "description": "Shared reference to web.SECRET_KEY_BASE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY": {
+          "defaultValue": "${{web.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY}}",
+          "description": "Shared reference to web.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY": {
+          "defaultValue": "${{web.ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}}",
+          "description": "Shared reference to web.ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT": {
+          "defaultValue": "${{web.ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT}}",
+          "description": "Shared reference to web.ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT; keep in sync with its source.",
+          "isOptional": false
+        },
+        "ADMIN_API_KEY": {
+          "defaultValue": "${{web.ADMIN_API_KEY}}",
+          "description": "Shared reference to web.ADMIN_API_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DIAGNOSTICS_API_KEY": {
+          "defaultValue": "${{web.DIAGNOSTICS_API_KEY}}",
+          "description": "Shared reference to web.DIAGNOSTICS_API_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SENT_QUOTAS_WEBHOOK_KEY": {
+          "defaultValue": "${{web.SENT_QUOTAS_WEBHOOK_KEY}}",
+          "description": "Shared reference to web.SENT_QUOTAS_WEBHOOK_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "PUBLIC_GO_PROJECT_IDENTIFIER": {
+          "defaultValue": "${{web.PUBLIC_GO_PROJECT_IDENTIFIER}}",
+          "description": "Shared reference to web.PUBLIC_GO_PROJECT_IDENTIFIER; keep in sync with its source.",
+          "isOptional": false
+        },
+        "OAUTH_CLIENT_UID": {
+          "defaultValue": "${{web.OAUTH_CLIENT_UID}}",
+          "description": "Shared reference to web.OAUTH_CLIENT_UID; keep in sync with its source.",
+          "isOptional": false
+        },
+        "OAUTH_CLIENT_SECRET": {
+          "defaultValue": "${{web.OAUTH_CLIENT_SECRET}}",
+          "description": "Shared reference to web.OAUTH_CLIENT_SECRET; keep in sync with its source.",
+          "isOptional": false
+        },
+        "BOOTSTRAP_ADMIN_EMAIL": {
+          "defaultValue": "${{web.BOOTSTRAP_ADMIN_EMAIL}}",
+          "description": "Shared reference to web.BOOTSTRAP_ADMIN_EMAIL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "BOOTSTRAP_ADMIN_PASSWORD": {
+          "defaultValue": "${{web.BOOTSTRAP_ADMIN_PASSWORD}}",
+          "description": "Shared reference to web.BOOTSTRAP_ADMIN_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DEFAULT_LOGO_URL": {
+          "defaultValue": "${{web.DEFAULT_LOGO_URL}}",
+          "description": "Shared reference to web.DEFAULT_LOGO_URL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DEFAULT_SOCIAL_PREVIEW_URL": {
+          "defaultValue": "${{web.DEFAULT_SOCIAL_PREVIEW_URL}}",
+          "description": "Shared reference to web.DEFAULT_SOCIAL_PREVIEW_URL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DEFAULT_LINK_TITLE": {
+          "defaultValue": "${{web.DEFAULT_LINK_TITLE}}",
+          "description": "Shared reference to web.DEFAULT_LINK_TITLE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DEFAULT_LINK_SUBTITLE": {
+          "defaultValue": "${{web.DEFAULT_LINK_SUBTITLE}}",
+          "description": "Shared reference to web.DEFAULT_LINK_SUBTITLE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "MAILER_DELIVERY_METHOD": {
+          "defaultValue": "${{web.MAILER_DELIVERY_METHOD}}",
+          "description": "Shared reference to web.MAILER_DELIVERY_METHOD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_ADDRESS": {
+          "defaultValue": "${{web.SMTP_ADDRESS}}",
+          "description": "Shared reference to web.SMTP_ADDRESS; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_PORT": {
+          "defaultValue": "${{web.SMTP_PORT}}",
+          "description": "Shared reference to web.SMTP_PORT; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_USERNAME": {
+          "defaultValue": "${{web.SMTP_USERNAME}}",
+          "description": "Shared reference to web.SMTP_USERNAME; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_PASSWORD": {
+          "defaultValue": "${{web.SMTP_PASSWORD}}",
+          "description": "Shared reference to web.SMTP_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_AUTHENTICATION": {
+          "defaultValue": "${{web.SMTP_AUTHENTICATION}}",
+          "description": "Shared reference to web.SMTP_AUTHENTICATION; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_ENABLE_STARTTLS_AUTO": {
+          "defaultValue": "${{web.SMTP_ENABLE_STARTTLS_AUTO}}",
+          "description": "Shared reference to web.SMTP_ENABLE_STARTTLS_AUTO; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SERVER_HOST": {
+          "defaultValue": "${{web.SERVER_HOST}}",
+          "description": "Shared reference to web.SERVER_HOST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "AWS_S3_KEY_ID": {
+          "defaultValue": "${{web.AWS_S3_KEY_ID}}",
+          "description": "Shared reference to web.AWS_S3_KEY_ID; keep in sync with its source.",
+          "isOptional": false
+        },
+        "AWS_S3_ACCESS_KEY": {
+          "defaultValue": "${{web.AWS_S3_ACCESS_KEY}}",
+          "description": "Shared reference to web.AWS_S3_ACCESS_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "AWS_S3_REGION": {
+          "defaultValue": "${{web.AWS_S3_REGION}}",
+          "description": "Shared reference to web.AWS_S3_REGION; keep in sync with its source.",
+          "isOptional": false
+        },
+        "AWS_S3_BUCKET": {
+          "defaultValue": "${{web.AWS_S3_BUCKET}}",
+          "description": "Shared reference to web.AWS_S3_BUCKET; keep in sync with its source.",
+          "isOptional": false
+        },
+        "S3_ENDPOINT": {
+          "defaultValue": "${{web.S3_ENDPOINT}}",
+          "description": "Shared reference to web.S3_ENDPOINT; keep in sync with its source.",
+          "isOptional": false
+        },
+        "S3_FORCE_PATH_STYLE": {
+          "defaultValue": "${{web.S3_FORCE_PATH_STYLE}}",
+          "description": "Shared reference to web.S3_FORCE_PATH_STYLE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "RAILS_ENV": {
+          "defaultValue": "${{web.RAILS_ENV}}",
+          "description": "Shared reference to web.RAILS_ENV; keep in sync with its source.",
+          "isOptional": false
+        },
+        "GROVS_SELF_HOSTED": {
+          "defaultValue": "${{web.GROVS_SELF_HOSTED}}",
+          "description": "Shared reference to web.GROVS_SELF_HOSTED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "GROVS_EE": {
+          "defaultValue": "${{web.GROVS_EE}}",
+          "description": "Shared reference to web.GROVS_EE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "RAILS_LOG_TO_STDOUT": {
+          "defaultValue": "${{web.RAILS_LOG_TO_STDOUT}}",
+          "description": "Shared reference to web.RAILS_LOG_TO_STDOUT; keep in sync with its source.",
+          "isOptional": false
+        },
+        "RAILS_SERVE_STATIC_FILES": {
+          "defaultValue": "${{web.RAILS_SERVE_STATIC_FILES}}",
+          "description": "Shared reference to web.RAILS_SERVE_STATIC_FILES; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_DATABASE": {
+          "defaultValue": "${{web.CLICKHOUSE_DATABASE}}",
+          "description": "Shared reference to web.CLICKHOUSE_DATABASE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "PORT": {
+          "defaultValue": "${{web.PORT}}",
+          "description": "Shared reference to web.PORT; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_DOMAIN": {
+          "defaultValue": "${{web.SMTP_DOMAIN}}",
+          "description": "Shared reference to web.SMTP_DOMAIN; keep in sync with its source.",
+          "isOptional": false
+        },
+        "MAILER_FROM": {
+          "defaultValue": "${{web.MAILER_FROM}}",
+          "description": "Shared reference to web.MAILER_FROM; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_HOST": {
+          "defaultValue": "${{web.POSTGRES_HOST}}",
+          "description": "Shared reference to web.POSTGRES_HOST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "REDIS_HOST": {
+          "defaultValue": "${{web.REDIS_HOST}}",
+          "description": "Shared reference to web.REDIS_HOST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "REDIS_PASSWORD": {
+          "defaultValue": "${{web.REDIS_PASSWORD}}",
+          "description": "Shared reference to web.REDIS_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_HOST": {
+          "defaultValue": "${{web.CLICKHOUSE_HOST}}",
+          "description": "Shared reference to web.CLICKHOUSE_HOST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "WEB_HOST": {
+          "defaultValue": "${{web.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Shared reference to web.RAILWAY_PRIVATE_DOMAIN; keep in sync with its source.",
+          "isOptional": false
+        },
+        "WEB_PORT": {
+          "defaultValue": "3000",
+          "description": "Private API health-check port for worker startup.",
+          "isOptional": false
+        }
+      },
+      "networking": {},
+      "volumeMounts": {}
+    },
+    "d0d6de96-d168-5f4a-8a9a-572cd3bca54a": {
+      "name": "worker-2",
+      "icon": "https://docs.grovs.io/logo.svg",
+      "source": {
+        "image": "ghcr.io/grovs-io/backend:2.3.0"
+      },
+      "build": {},
+      "deploy": {
+        "numReplicas": 1,
+        "sleepApplication": false,
+        "restartPolicyType": "ALWAYS",
+        "startCommand": "bash -ec '#!/usr/bin/env bash\n# Sourced into the commands embedded in Railway/Render configuration.\n# No files from this repository need to be present in the application image.\nset -eu\n: \"${SERVER_HOST:?Set your app domain}\"\n: \"${DOMAIN_LIVE:?Set your production links domain}\"\n: \"${DOMAIN_TEST:?Set your test links domain}\"\n: \"${AWS_S3_KEY_ID:?Set object storage credentials}\"\n: \"${AWS_S3_ACCESS_KEY:?Set object storage credentials}\"\n: \"${AWS_S3_REGION:?Set your bucket region}\"\n: \"${AWS_S3_BUCKET:?Set your bucket name}\"\nexport ACTIVE_STORAGE_SERVICE=amazon\nexport SERVER_HOST_PROTOCOL=https:// REACT_HOST_PROTOCOL=https://\nexport REACT_HOST=\"dashboard.$SERVER_HOST\"\nexport API_HOST=\"api.$SERVER_HOST\" SDK_HOST=\"sdk.$SERVER_HOST\"\nexport DASHBOARD_HOST=\"$REACT_HOST\" MCP_HOST=\"mcp.$SERVER_HOST\" GO_HOST=\"go.$SERVER_HOST\"\nexport PREVIEW_HOST=\"preview.$SERVER_HOST\"\nexport LINKS_PROD_HOST=\"links.$DOMAIN_LIVE\" LINKS_TEST_HOST=\"links.$DOMAIN_TEST\"\nexport PREVIEW_BASE_URL=\"https://preview.$SERVER_HOST\"\nexport MCP_CONSENT_URL=\"https://dashboard.$SERVER_HOST/mcp/authorize\"\nexport S3_ASSET_PREFIX=\"https://api.$SERVER_HOST\"\nencode_password() {\n  ruby -ruri -e '\"'\"'print URI.encode_www_form_component(ENV.fetch(ARGV.fetch(0))).gsub(\"+\", \"%20\")'\"'\"' \"$1\"\n}\nif [ -z \"${DATABASE_URL:-}\" ]; then\n  : \"${POSTGRES_HOST:?Set the private PostgreSQL host}\"\n  DATABASE_URL=\"postgres://grovs:$(encode_password POSTGRES_PASSWORD)@$POSTGRES_HOST:5432/grovs_production\"\n  export DATABASE_URL\nfi\nif [ -z \"${REDIS_URL:-}\" ]; then\n  : \"${REDIS_HOST:?Set the private Redis host}\"\n  REDIS_URL=\"redis://:$(encode_password REDIS_PASSWORD)@$REDIS_HOST:6379/0\"\n  export REDIS_URL\nfi\nif [ -z \"${CLICKHOUSE_URL:-}\" ]; then\n  : \"${CLICKHOUSE_HOST:?Set the private ClickHouse host}\"\n  : \"${CLICKHOUSE_PASSWORD:?Set the ClickHouse password}\"\n  ENCODED_PASSWORD=$(encode_password CLICKHOUSE_PASSWORD)\n  export CLICKHOUSE_URL=\"http://grovs:$ENCODED_PASSWORD@$CLICKHOUSE_HOST:8123\"\nfi\n\nwait_for_http() {\n  local attempt\n  for ((attempt=0; attempt<120; attempt++)); do\n    if curl --fail --silent --max-time 5 \"$1\" >/dev/null; then return 0; fi\n    sleep 5\n  done\n  echo \"Dependency did not become healthy within the startup window.\" >&2\n  return 1\n}\n\nwait_for_http \"http://$WEB_HOST:${WEB_PORT:-3000}/up\"\npids=()\ntrap '\"'\"'kill \"${pids[@]}\" 2>/dev/null || true'\"'\"' EXIT\ntrap '\"'\"'exit 143'\"'\"' TERM INT\nbundle exec sidekiq -C config/sidekiq_maintenance.yml &\npids+=($!)\nbundle exec sidekiq -C config/sidekiq_device_updates.yml &\npids+=($!)\nwait -n\n'"
+      },
+      "variables": {
+        "SERVER_HOST_PROTOCOL": {
+          "defaultValue": "${{web.SERVER_HOST_PROTOCOL}}",
+          "description": "Shared reference to web.SERVER_HOST_PROTOCOL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "REACT_HOST_PROTOCOL": {
+          "defaultValue": "${{web.REACT_HOST_PROTOCOL}}",
+          "description": "Shared reference to web.REACT_HOST_PROTOCOL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DOMAIN_LIVE": {
+          "defaultValue": "${{web.DOMAIN_LIVE}}",
+          "description": "Shared reference to web.DOMAIN_LIVE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DOMAIN_TEST": {
+          "defaultValue": "${{web.DOMAIN_TEST}}",
+          "description": "Shared reference to web.DOMAIN_TEST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "${{web.POSTGRES_USER}}",
+          "description": "Shared reference to web.POSTGRES_USER; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{web.POSTGRES_PASSWORD}}",
+          "description": "Shared reference to web.POSTGRES_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "${{web.POSTGRES_DB}}",
+          "description": "Shared reference to web.POSTGRES_DB; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_MAX_CONNECTIONS": {
+          "defaultValue": "${{web.POSTGRES_MAX_CONNECTIONS}}",
+          "description": "Shared reference to web.POSTGRES_MAX_CONNECTIONS; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_PASSWORD": {
+          "defaultValue": "${{web.CLICKHOUSE_PASSWORD}}",
+          "description": "Shared reference to web.CLICKHOUSE_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_WRITE_ENABLED": {
+          "defaultValue": "${{web.CLICKHOUSE_WRITE_ENABLED}}",
+          "description": "Shared reference to web.CLICKHOUSE_WRITE_ENABLED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_READ_ENABLED": {
+          "defaultValue": "${{web.CLICKHOUSE_READ_ENABLED}}",
+          "description": "Shared reference to web.CLICKHOUSE_READ_ENABLED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_PRIMARY": {
+          "defaultValue": "${{web.CLICKHOUSE_PRIMARY}}",
+          "description": "Shared reference to web.CLICKHOUSE_PRIMARY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_ANALYTICS_ROLLUPS_READ_ENABLED": {
+          "defaultValue": "${{web.CLICKHOUSE_ANALYTICS_ROLLUPS_READ_ENABLED}}",
+          "description": "Shared reference to web.CLICKHOUSE_ANALYTICS_ROLLUPS_READ_ENABLED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_ATTRIBUTION_READ_ENABLED": {
+          "defaultValue": "${{web.CLICKHOUSE_ATTRIBUTION_READ_ENABLED}}",
+          "description": "Shared reference to web.CLICKHOUSE_ATTRIBUTION_READ_ENABLED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_LINK_DIMENSIONS_READ_ENABLED": {
+          "defaultValue": "${{web.CLICKHOUSE_LINK_DIMENSIONS_READ_ENABLED}}",
+          "description": "Shared reference to web.CLICKHOUSE_LINK_DIMENSIONS_READ_ENABLED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "REVENUE_READS_FROM_LEDGER": {
+          "defaultValue": "${{web.REVENUE_READS_FROM_LEDGER}}",
+          "description": "Shared reference to web.REVENUE_READS_FROM_LEDGER; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_ROLLUP_FAST_LANE": {
+          "defaultValue": "${{web.CLICKHOUSE_ROLLUP_FAST_LANE}}",
+          "description": "Shared reference to web.CLICKHOUSE_ROLLUP_FAST_LANE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DASHBOARD_CACHE_TTL_SECONDS": {
+          "defaultValue": "${{web.DASHBOARD_CACHE_TTL_SECONDS}}",
+          "description": "Shared reference to web.DASHBOARD_CACHE_TTL_SECONDS; keep in sync with its source.",
+          "isOptional": false
+        },
+        "PG_SHADOW_WRITES": {
+          "defaultValue": "${{web.PG_SHADOW_WRITES}}",
+          "description": "Shared reference to web.PG_SHADOW_WRITES; keep in sync with its source.",
+          "isOptional": false
+        },
+        "WEB_CONCURRENCY": {
+          "defaultValue": "${{web.WEB_CONCURRENCY}}",
+          "description": "Shared reference to web.WEB_CONCURRENCY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "RAILS_MAX_THREADS": {
+          "defaultValue": "${{web.RAILS_MAX_THREADS}}",
+          "description": "Shared reference to web.RAILS_MAX_THREADS; keep in sync with its source.",
+          "isOptional": false
+        },
+        "RAILS_DB_POOL": {
+          "defaultValue": "${{web.RAILS_DB_POOL}}",
+          "description": "Shared reference to web.RAILS_DB_POOL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SIDEKIQ_EVENTS_CONCURRENCY": {
+          "defaultValue": "${{web.SIDEKIQ_EVENTS_CONCURRENCY}}",
+          "description": "Shared reference to web.SIDEKIQ_EVENTS_CONCURRENCY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "ACTIVE_STORAGE_SERVICE": {
+          "defaultValue": "${{web.ACTIVE_STORAGE_SERVICE}}",
+          "description": "Shared reference to web.ACTIVE_STORAGE_SERVICE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SECRET_KEY_BASE": {
+          "defaultValue": "${{web.SECRET_KEY_BASE}}",
+          "description": "Shared reference to web.SECRET_KEY_BASE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY": {
+          "defaultValue": "${{web.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY}}",
+          "description": "Shared reference to web.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY": {
+          "defaultValue": "${{web.ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}}",
+          "description": "Shared reference to web.ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT": {
+          "defaultValue": "${{web.ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT}}",
+          "description": "Shared reference to web.ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT; keep in sync with its source.",
+          "isOptional": false
+        },
+        "ADMIN_API_KEY": {
+          "defaultValue": "${{web.ADMIN_API_KEY}}",
+          "description": "Shared reference to web.ADMIN_API_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DIAGNOSTICS_API_KEY": {
+          "defaultValue": "${{web.DIAGNOSTICS_API_KEY}}",
+          "description": "Shared reference to web.DIAGNOSTICS_API_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SENT_QUOTAS_WEBHOOK_KEY": {
+          "defaultValue": "${{web.SENT_QUOTAS_WEBHOOK_KEY}}",
+          "description": "Shared reference to web.SENT_QUOTAS_WEBHOOK_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "PUBLIC_GO_PROJECT_IDENTIFIER": {
+          "defaultValue": "${{web.PUBLIC_GO_PROJECT_IDENTIFIER}}",
+          "description": "Shared reference to web.PUBLIC_GO_PROJECT_IDENTIFIER; keep in sync with its source.",
+          "isOptional": false
+        },
+        "OAUTH_CLIENT_UID": {
+          "defaultValue": "${{web.OAUTH_CLIENT_UID}}",
+          "description": "Shared reference to web.OAUTH_CLIENT_UID; keep in sync with its source.",
+          "isOptional": false
+        },
+        "OAUTH_CLIENT_SECRET": {
+          "defaultValue": "${{web.OAUTH_CLIENT_SECRET}}",
+          "description": "Shared reference to web.OAUTH_CLIENT_SECRET; keep in sync with its source.",
+          "isOptional": false
+        },
+        "BOOTSTRAP_ADMIN_EMAIL": {
+          "defaultValue": "${{web.BOOTSTRAP_ADMIN_EMAIL}}",
+          "description": "Shared reference to web.BOOTSTRAP_ADMIN_EMAIL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "BOOTSTRAP_ADMIN_PASSWORD": {
+          "defaultValue": "${{web.BOOTSTRAP_ADMIN_PASSWORD}}",
+          "description": "Shared reference to web.BOOTSTRAP_ADMIN_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DEFAULT_LOGO_URL": {
+          "defaultValue": "${{web.DEFAULT_LOGO_URL}}",
+          "description": "Shared reference to web.DEFAULT_LOGO_URL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DEFAULT_SOCIAL_PREVIEW_URL": {
+          "defaultValue": "${{web.DEFAULT_SOCIAL_PREVIEW_URL}}",
+          "description": "Shared reference to web.DEFAULT_SOCIAL_PREVIEW_URL; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DEFAULT_LINK_TITLE": {
+          "defaultValue": "${{web.DEFAULT_LINK_TITLE}}",
+          "description": "Shared reference to web.DEFAULT_LINK_TITLE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "DEFAULT_LINK_SUBTITLE": {
+          "defaultValue": "${{web.DEFAULT_LINK_SUBTITLE}}",
+          "description": "Shared reference to web.DEFAULT_LINK_SUBTITLE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "MAILER_DELIVERY_METHOD": {
+          "defaultValue": "${{web.MAILER_DELIVERY_METHOD}}",
+          "description": "Shared reference to web.MAILER_DELIVERY_METHOD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_ADDRESS": {
+          "defaultValue": "${{web.SMTP_ADDRESS}}",
+          "description": "Shared reference to web.SMTP_ADDRESS; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_PORT": {
+          "defaultValue": "${{web.SMTP_PORT}}",
+          "description": "Shared reference to web.SMTP_PORT; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_USERNAME": {
+          "defaultValue": "${{web.SMTP_USERNAME}}",
+          "description": "Shared reference to web.SMTP_USERNAME; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_PASSWORD": {
+          "defaultValue": "${{web.SMTP_PASSWORD}}",
+          "description": "Shared reference to web.SMTP_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_AUTHENTICATION": {
+          "defaultValue": "${{web.SMTP_AUTHENTICATION}}",
+          "description": "Shared reference to web.SMTP_AUTHENTICATION; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_ENABLE_STARTTLS_AUTO": {
+          "defaultValue": "${{web.SMTP_ENABLE_STARTTLS_AUTO}}",
+          "description": "Shared reference to web.SMTP_ENABLE_STARTTLS_AUTO; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SERVER_HOST": {
+          "defaultValue": "${{web.SERVER_HOST}}",
+          "description": "Shared reference to web.SERVER_HOST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "AWS_S3_KEY_ID": {
+          "defaultValue": "${{web.AWS_S3_KEY_ID}}",
+          "description": "Shared reference to web.AWS_S3_KEY_ID; keep in sync with its source.",
+          "isOptional": false
+        },
+        "AWS_S3_ACCESS_KEY": {
+          "defaultValue": "${{web.AWS_S3_ACCESS_KEY}}",
+          "description": "Shared reference to web.AWS_S3_ACCESS_KEY; keep in sync with its source.",
+          "isOptional": false
+        },
+        "AWS_S3_REGION": {
+          "defaultValue": "${{web.AWS_S3_REGION}}",
+          "description": "Shared reference to web.AWS_S3_REGION; keep in sync with its source.",
+          "isOptional": false
+        },
+        "AWS_S3_BUCKET": {
+          "defaultValue": "${{web.AWS_S3_BUCKET}}",
+          "description": "Shared reference to web.AWS_S3_BUCKET; keep in sync with its source.",
+          "isOptional": false
+        },
+        "S3_ENDPOINT": {
+          "defaultValue": "${{web.S3_ENDPOINT}}",
+          "description": "Shared reference to web.S3_ENDPOINT; keep in sync with its source.",
+          "isOptional": false
+        },
+        "S3_FORCE_PATH_STYLE": {
+          "defaultValue": "${{web.S3_FORCE_PATH_STYLE}}",
+          "description": "Shared reference to web.S3_FORCE_PATH_STYLE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "RAILS_ENV": {
+          "defaultValue": "${{web.RAILS_ENV}}",
+          "description": "Shared reference to web.RAILS_ENV; keep in sync with its source.",
+          "isOptional": false
+        },
+        "GROVS_SELF_HOSTED": {
+          "defaultValue": "${{web.GROVS_SELF_HOSTED}}",
+          "description": "Shared reference to web.GROVS_SELF_HOSTED; keep in sync with its source.",
+          "isOptional": false
+        },
+        "GROVS_EE": {
+          "defaultValue": "${{web.GROVS_EE}}",
+          "description": "Shared reference to web.GROVS_EE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "RAILS_LOG_TO_STDOUT": {
+          "defaultValue": "${{web.RAILS_LOG_TO_STDOUT}}",
+          "description": "Shared reference to web.RAILS_LOG_TO_STDOUT; keep in sync with its source.",
+          "isOptional": false
+        },
+        "RAILS_SERVE_STATIC_FILES": {
+          "defaultValue": "${{web.RAILS_SERVE_STATIC_FILES}}",
+          "description": "Shared reference to web.RAILS_SERVE_STATIC_FILES; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_DATABASE": {
+          "defaultValue": "${{web.CLICKHOUSE_DATABASE}}",
+          "description": "Shared reference to web.CLICKHOUSE_DATABASE; keep in sync with its source.",
+          "isOptional": false
+        },
+        "PORT": {
+          "defaultValue": "${{web.PORT}}",
+          "description": "Shared reference to web.PORT; keep in sync with its source.",
+          "isOptional": false
+        },
+        "SMTP_DOMAIN": {
+          "defaultValue": "${{web.SMTP_DOMAIN}}",
+          "description": "Shared reference to web.SMTP_DOMAIN; keep in sync with its source.",
+          "isOptional": false
+        },
+        "MAILER_FROM": {
+          "defaultValue": "${{web.MAILER_FROM}}",
+          "description": "Shared reference to web.MAILER_FROM; keep in sync with its source.",
+          "isOptional": false
+        },
+        "POSTGRES_HOST": {
+          "defaultValue": "${{web.POSTGRES_HOST}}",
+          "description": "Shared reference to web.POSTGRES_HOST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "REDIS_HOST": {
+          "defaultValue": "${{web.REDIS_HOST}}",
+          "description": "Shared reference to web.REDIS_HOST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "REDIS_PASSWORD": {
+          "defaultValue": "${{web.REDIS_PASSWORD}}",
+          "description": "Shared reference to web.REDIS_PASSWORD; keep in sync with its source.",
+          "isOptional": false
+        },
+        "CLICKHOUSE_HOST": {
+          "defaultValue": "${{web.CLICKHOUSE_HOST}}",
+          "description": "Shared reference to web.CLICKHOUSE_HOST; keep in sync with its source.",
+          "isOptional": false
+        },
+        "WEB_HOST": {
+          "defaultValue": "${{web.RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Shared reference to web.RAILWAY_PRIVATE_DOMAIN; keep in sync with its source.",
+          "isOptional": false
+        },
+        "WEB_PORT": {
+          "defaultValue": "3000",
+          "description": "Private API health-check port for worker startup.",
+          "isOptional": false
+        }
+      },
+      "networking": {},
+      "volumeMounts": {}
+    },
+    "2e956cba-2525-59bd-8abf-df50838569b6": {
+      "name": "dashboard",
+      "icon": "https://docs.grovs.io/logo.svg",
+      "source": {
+        "image": "ghcr.io/grovs-io/dashboard:2.3.0"
+      },
+      "build": {},
+      "deploy": {
+        "numReplicas": 1,
+        "sleepApplication": false,
+        "restartPolicyType": "ALWAYS",
+        "healthcheckPath": "/login",
+        "healthcheckTimeout": 600
+      },
+      "variables": {
+        "API_URL": {
+          "defaultValue": "https://api.${{web.SERVER_HOST}}",
+          "description": "Public API URL on your custom domain.",
+          "isOptional": false
+        },
+        "OAUTH_CLIENT_UID": {
+          "defaultValue": "${{web.OAUTH_CLIENT_UID}}",
+          "description": "Shared reference to web.OAUTH_CLIENT_UID; keep in sync with its source.",
+          "isOptional": false
+        },
+        "OAUTH_CLIENT_SECRET": {
+          "defaultValue": "${{web.OAUTH_CLIENT_SECRET}}",
+          "description": "Shared reference to web.OAUTH_CLIENT_SECRET; keep in sync with its source.",
+          "isOptional": false
+        },
+        "HOSTNAME": {
+          "defaultValue": "::",
+          "description": "Listen on IPv6 and IPv4 for Railway's private network.",
+          "isOptional": false
+        },
+        "PORT": {
+          "defaultValue": "3000",
+          "description": "HTTP listening port. Keep at 3000 to match Railway networking.",
+          "isOptional": false
+        }
+      },
+      "networking": {
+        "serviceDomains": {
+          "<hasDomain>:3000": {}
+        }
+      },
+      "volumeMounts": {}
+    }
+  }
+}

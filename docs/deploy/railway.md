@@ -1,14 +1,47 @@
 # Deploy on Railway
 
-The repository includes a native
-[Railway infrastructure definition](../../.railway/railway.ts). It creates the
-API, dashboard, two workers and three private database services with persistent
-volumes. It also declares the app and wildcard link domains. You use Railway's
-CLI to review the proposed resources before creating them.
+Deploy Grovs Community from the Railway template. It creates the API, dashboard,
+two workers and three private database services with persistent volumes.
 
 **Railway compute, volumes, network usage and your object storage are billable.**
-Check your plan's capacity and custom-domain allowance for this seven-service
-deployment.
+Use a plan with capacity for seven services and the custom domains below.
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/grovs-community)
+
+## Deploy from the template
+
+1. Open **Deploy on Railway** and choose your workspace.
+2. Fill in the eight required variables on `web`: `SERVER_HOST`, `DOMAIN_LIVE`,
+   `DOMAIN_TEST`, `BOOTSTRAP_ADMIN_EMAIL`, `AWS_S3_KEY_ID`, `AWS_S3_ACCESS_KEY`,
+   `AWS_S3_REGION` and `AWS_S3_BUCKET`. Use a private bucket and bucket-scoped
+   credentials. For S3-compatible storage, also set `S3_ENDPOINT` and
+   `S3_FORCE_PATH_STYLE` as needed.
+3. Review the services, storage and estimated usage, then deploy. Railway
+   generates the database passwords, application secrets and admin password.
+   Keep these values when redeploying or upgrading.
+4. Add your custom domains in Networking, all targeting port **3000**. For
+   `SERVER_HOST=grovs.example.com`, `DOMAIN_LIVE=links.example.com` and
+   `DOMAIN_TEST=test.links.example.com`, use:
+
+   | Service | Custom domains |
+   |---|---|
+   | `dashboard` | `dashboard.grovs.example.com` |
+   | `web` | `api.grovs.example.com`, `sdk.grovs.example.com`, `mcp.grovs.example.com`, `go.grovs.example.com`, `preview.grovs.example.com`, `*.links.example.com`, `*.test.links.example.com` |
+
+5. Add the DNS and certificate-verification records Railway provides. Sign in
+   at your dashboard domain using the admin email and generated
+   `BOOTSTRAP_ADMIN_PASSWORD` from `web`'s variables. Check the API `/up`
+   endpoint, create a project, test links and confirm analytics.
+
+The API initializes PostgreSQL and ClickHouse before starting. If a database is
+still starting during the first attempt, wait until it is ready and redeploy
+`web`. Workers wait for API health. Keep `worker-1` at exactly one instance.
+
+## Alternative: deploy with the CLI
+
+For a configuration managed in files, use the native Railway infrastructure
+definition below. It also declares the custom domains automatically. Choose
+this flow instead of deploying a second copy from the template.
 
 ## 1. Prepare your configuration
 

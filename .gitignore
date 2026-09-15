@@ -6,3 +6,4 @@ docker-compose.override.yml
 !docs/**
 __pycache__/
 node_modules/
+.gstack/
