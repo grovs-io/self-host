@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
 # Writes .env from your domains with generated secrets; GROVS_DOMAIN=local for a trial; keeps an existing .env.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+umask 077
+STACK_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+mkdir -p "${GROVS_CONFIG_DIR:-$STACK_DIR}"
+cd "${GROVS_CONFIG_DIR:-$STACK_DIR}"
 
 if [ -f .env ]; then
   echo ".env already exists, keeping it (delete it to regenerate)."
   exit 0
 fi
-cp .env.example .env
+if [ -n "${GROVS_VERSION:-}" ]; then
+  [[ "$GROVS_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-][a-zA-Z0-9.-]+)?$ ]] || {
+    echo "GROVS_VERSION must be a release version (for example 2.3.0)." >&2; exit 1;
+  }
+fi
+cp "$STACK_DIR/.env.example" .env
 
 rnd() { openssl rand -hex "$1"; }
 set_env() {
@@ -23,6 +31,10 @@ ask() {
     printf -v "$var" '%s' "$default"
   fi
 }
+
+if [ -n "${GROVS_VERSION:-}" ]; then
+  set_env GROVS_VERSION "$GROVS_VERSION"
+fi
 
 echo "Grovs needs a domain for real deep links. Press Enter to run a local trial on lvh.me instead."
 ask GROVS_DOMAIN "App domain: dashboard, API and SDKs live under it (e.g. acme.com)" local
