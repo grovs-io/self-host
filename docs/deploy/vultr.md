@@ -2,9 +2,19 @@
 
 [Open Vultr Console](https://my.vultr.com/deploy/)
 
+This guide covers installing **Grovs Community Edition** on a regular Vultr
+instance. Community Edition requires no Enterprise license; Enterprise features
+require a separate license from grovs.io.
+
+The Vultr Marketplace vendor application is under review. An
+[automatic first-boot package](../../deploy/catalogs/vultr/README.md) is prepared,
+but the image has not yet been built or tested on Vultr and no Marketplace
+listing is available. The console link above opens regular instance creation.
+
 Use a fresh **Ubuntu 24.04 x86_64** server with at least **4 vCPU, 8 GB RAM
 and 80 GB SSD**, a public IPv4 address, an SSH key, and a domain you control.
 The cloud provider bills your account for the server, storage and traffic.
+Smaller instances have not been validated for evaluation.
 
 ## Create the instance
 

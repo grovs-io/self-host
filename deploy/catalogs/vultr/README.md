@@ -5,6 +5,23 @@ customer's first boot, a cloud-init per-instance script reads Vultr application
 variables and generates that installation's credentials. No image has been built
 or deployed on Vultr yet; the package has local checks only.
 
+## Listing scope and review status
+
+The Vultr vendor application is under review. The proposed listing deploys
+**Grovs Community Edition**, free to use without an Enterprise license;
+customers pay Vultr for infrastructure. Enterprise features require a separate
+license from grovs.io and are not included in the Community deployment.
+
+Recommend **4 vCPU, 8 GB RAM and at least 80 GB SSD** for the complete stack.
+Smaller evaluation instances have not been validated and should not be
+advertised as supported at launch.
+
+The prepared delivery mechanism is a snapshot with automatic first-boot setup,
+not a manual installation on a plain OS. Customers supply the two application
+variables below, configure DNS and retrieve their generated login credentials.
+Confirm the snapshot delivery approach with Vultr during review. Image building,
+live deployment validation and approval remain pending.
+
 ## Maintainer: build and submit
 
 Use the [official vendor tools](https://github.com/vultr/vultr-marketplace) to
