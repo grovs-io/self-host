@@ -11,6 +11,7 @@ the provider. No paid servers were created for this work.
 | Akamai / Linode | [StackScript and Ansible](akamai/README.md), SSH operator, firewall, credentials | Fresh Linode test, real screenshots, upstream review |
 | Easypanel | [Native template](easypanel/README.md), generated secrets, database volumes | Import into an Easypanel instance, verify wildcard TLS, capture a populated dashboard, upstream PR |
 | CapRover | [One Click App](caprover/README.md), generated secrets, database volumes | Deploy on a CapRover instance, verify wildcard TLS, upstream PR |
+| Dokploy | [Catalog blueprint](dokploy/README.md), Base64 import blob, generated secrets, database volumes | Deploy on a Dokploy instance, verify wildcard TLS, upstream PR |
 
 ## Local checks
 

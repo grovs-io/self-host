@@ -15,7 +15,7 @@ ranking benefits are controlled by the provider.
 | 1 | Easypanel | [Template repository](https://github.com/easypanel-io/templates) | [Native template, logo and schema checks](../../deploy/catalogs/easypanel/README.md) | Live import, wildcard HTTPS verification, populated-dashboard screenshot and upstream PR |
 | 1 | CapRover | [One Click Apps](https://github.com/caprover/one-click-apps) | [Template, logo and upstream validation](../../deploy/catalogs/caprover/README.md) | Live deployment, wildcard HTTPS verification and upstream PR |
 | 1 | Coolify | [Service contribution workflow](https://coolify.io/docs/services) | Compose import and routing guide | Native catalog metadata, generated fields, live test and upstream submission |
-| 1 | Dokploy | [Template repository](https://github.com/Dokploy/templates) | Compose import and routing guide | Native catalog metadata, live test and upstream submission |
+| 1 | Dokploy | [Template repository](https://github.com/Dokploy/templates) | [Catalog blueprint, import blob and upstream validation](../../deploy/catalogs/dokploy/README.md) | Live deployment, wildcard HTTPS verification and upstream PR |
 | 2 | Microsoft / Azure | [Azure Application offer](https://learn.microsoft.com/en-us/partner-center/marketplace-offers/plan-azure-application-offer) | ARM template and Deploy to Azure button | Partner Center publisher account, solution-template offer, portal UI definition/package, live test and certification |
 | 2 | Scaleway | [Marketplace partner application](https://www.scaleway.com/en/marketplace/become-partner/) | Instance guide and cloud-init | Confirm distribution format with partner team, package and test it, complete their onboarding |
 | 2 | AWS | [AWS Marketplace seller guide](https://docs.aws.amazon.com/marketplace/latest/userguide/user-guide-for-sellers.html) | CloudFormation template | Seller onboarding, choose a supported offer format, build/test an image or container product, submit for review |
@@ -101,7 +101,7 @@ links available; don't promise a dofollow link or a ranking improvement.
    **Never snapshot an initialized `/opt/grovs/.env` or populated Docker volumes.**
 7. Submission ID/PR, reviewer feedback, accepted listing URL and the release tested.
 
-The Azure, cloud-init and [five catalog packages](../../deploy/catalogs/README.md)
+The Azure, cloud-init and [six catalog packages](../../deploy/catalogs/README.md)
 have local validation only. No billable cloud instances were created for this
 expansion. Image builds, live validation evidence and provider review remain
 pending; no new official catalog listing is claimed.

@@ -8,6 +8,7 @@ installation, TLS issuance or provider metadata delivery.
 | Repository Python tests | 34 passed, including generated-file freshness, migration failure propagation, secrets, persistence and Ansible input validation |
 | CapRover upstream `validate_apps` and `build` | Passed with the candidate copied into the upstream tree |
 | Easypanel template generation, TypeScript and Zod schema checks | Passed with the candidate copied into the upstream tree |
+| Dokploy upstream `generate-meta.js --check`, `validate-template.ts` and `validate-docker-compose.ts` | Passed with the blueprint copied into the upstream tree; `docker compose config` accepts the file with the template environment |
 | Easypanel playground production build | Passed using Node 22; upstream Next.js 12 fails with this workstation's Node 26 |
 | DigitalOcean Packer recipe | `packer init` and `packer validate` passed with a dummy token; no `build` run |
 | Vultr Packer recipe | `packer init` and `packer validate` passed with a dummy token; no `build` run |
@@ -19,6 +20,7 @@ Upstream revisions checked:
 
 - Easypanel templates: `647714de6c7c285561316628dabd6303fbbfaeb4`.
 - CapRover One Click Apps: `43f049e5a0d8eb1779481a839640ba00203d131f`.
+- Dokploy templates: `830d6bbc8de2a8cb0c87d3c3f2294940ecd0e933`.
 - Packer 1.14.2, DigitalOcean plugin 1.4.1, Vultr plugin 2.7.0.
 - Ansible core 2.18.4.
 
@@ -27,7 +29,7 @@ Upstream revisions checked:
 - Build and launch DigitalOcean/Vultr marketplace images, confirm cleanup and
   unique instance identity, and complete vendor onboarding.
 - Execute the Ansible installer on Ubuntu in a new Linode.
-- Import and start the panel templates in actual Easypanel/CapRover instances.
+- Import and start the panel templates in actual Easypanel/CapRover/Dokploy instances.
 - Verify wildcard HTTPS, migrations against real databases, dashboard login,
   project links, event ingestion, uploads, reboot and backup/restore.
 - Capture genuine application screenshots, submit packages for provider review

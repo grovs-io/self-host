@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate panel submission packages from public defaults, never the private .env."""
 import argparse
+import base64
 import importlib.util
 import json
 from pathlib import Path
@@ -149,16 +150,148 @@ export function generate(input: Input): Output {
     return source,metadata
 
 
+def yaml_text(value, indent=0):
+    """Emit the limited YAML the Dokploy blueprint needs: plain keys, quoted strings, ints, lists, maps."""
+    pad = '  ' * indent
+    if isinstance(value, dict):
+        if not value: return '{}\n'
+        return ''.join(f"{pad}{key}:" + ('\n' if isinstance(item, (dict, list)) and item else ' ')
+                       + yaml_text(item, indent + 1) for key, item in value.items())
+    if isinstance(value, list):
+        if not value: return '[]\n'
+        return ''.join(f"{pad}- " + yaml_text(item, indent + 1) for item in value)
+    if isinstance(value, bool): return f"{str(value).lower()}\n"
+    if isinstance(value, int): return f"{value}\n"
+    return json.dumps(value) + '\n'
+
+def dokploy():
+    """Blueprint for the Dokploy template catalog: no proxy labels, hosts derived from four env values."""
+    env_keys = ['SERVER_HOST', 'DOMAIN_LIVE', 'DOMAIN_TEST', 'SERVER_HOST_PROTOCOL', 'BOOTSTRAP_ADMIN_EMAIL']
+    secrets = [key for key in SECRETS if key != 'REDIS_PASSWORD']
+    backend = {}
+    for key, value in CONFIG.items():
+        if key in EXCLUDED or key in secrets or key.endswith('_HOST') or key in env_keys:
+            continue
+        backend[key] = value
+    backend.update({key: '${' + key + '}' for key in env_keys + secrets})
+    host = lambda prefix, domain='SERVER_HOST': f'{prefix}.${{{domain}}}'
+    backend.update(DASHBOARD_HOST=host('dashboard'), API_HOST=host('api'), SDK_HOST=host('sdk'),
+                   MCP_HOST=host('mcp'), GO_HOST=host('go'), PREVIEW_HOST=host('preview'),
+                   LINKS_PROD_HOST=host('links', 'DOMAIN_LIVE'), LINKS_TEST_HOST=host('links', 'DOMAIN_TEST'),
+                   REACT_HOST_PROTOCOL='${SERVER_HOST_PROTOCOL}', REACT_HOST=host('dashboard'),
+                   PREVIEW_BASE_URL='${SERVER_HOST_PROTOCOL}' + host('preview'),
+                   MCP_CONSENT_URL='${SERVER_HOST_PROTOCOL}' + host('dashboard') + '/mcp/authorize',
+                   S3_ASSET_PREFIX='${SERVER_HOST_PROTOCOL}' + host('api'),
+                   SMTP_DOMAIN='${SERVER_HOST}', MAILER_FROM='Grovs <noreply@${SERVER_HOST}>',
+                   RAILS_ENV='production', RAILS_LOG_TO_STDOUT='true', RAILS_SERVE_STATIC_FILES='true',
+                   GROVS_SELF_HOSTED='true', GROVS_EE='false', ACTIVE_STORAGE_SERVICE='local',
+                   DATABASE_URL='postgres://grovs:${POSTGRES_PASSWORD}@postgres:5432/grovs_production',
+                   REDIS_URL='redis://redis:6379/0',
+                   CLICKHOUSE_URL='http://grovs:${CLICKHOUSE_PASSWORD}@clickhouse:8123',
+                   CLICKHOUSE_DATABASE='grovs_production')
+    backend = dict(sorted(backend.items()))
+    healthy = lambda *roles: {role: {'condition': 'service_healthy'} for role in roles}
+    def sidekiq(*queues):
+        return ['bash', '-c', ' '.join(f'bundle exec sidekiq -C config/sidekiq_{q}.yml &' for q in queues) + ' wait -n']
+    def app(command, **extra):
+        return {'image': IMAGES['web'], 'restart': 'unless-stopped', 'environment': backend,
+                'volumes': ['storage:/app/storage'], 'command': command, **extra}
+    def links_routing():
+        # Dokploy's Domains tab creates the fixed hosts; per-project link hosts need these wildcard routers.
+        # Priority 1 keeps Dokploy's own Host() routers ahead of the wildcard when the domains overlap.
+        rule = ' || '.join('HostRegexp(`^[a-z0-9-]+\\.${' + key + '}$$`)' for key in ('DOMAIN_LIVE', 'DOMAIN_TEST'))
+        service = '${APP_NAME}-links'
+        labels = ['traefik.http.services.' + service + '.loadbalancer.server.port=3000']
+        for router, entrypoint in ((service, 'web'), (service + '-secure', 'websecure')):
+            prefix = 'traefik.http.routers.' + router + '.'
+            labels += [prefix + 'rule=' + rule, prefix + 'entrypoints=' + entrypoint,
+                       prefix + 'priority=1', prefix + 'service=' + service]
+        secure = 'traefik.http.routers.' + service + '-secure.'
+        labels += [secure + 'tls=true', secure + 'tls.certresolver=${GROVS_CERT_RESOLVER:-}']
+        for index, key in enumerate(('DOMAIN_LIVE', 'DOMAIN_TEST')):
+            labels += [f'{secure}tls.domains[{index}].main=${{{key}}}', f'{secure}tls.domains[{index}].sans=*.${{{key}}}']
+        return labels
+    services = {
+        'postgres': {'image': IMAGES['postgres'], 'restart': 'unless-stopped',
+                     'environment': {'POSTGRES_USER': 'grovs', 'POSTGRES_PASSWORD': '${POSTGRES_PASSWORD}',
+                                     'POSTGRES_DB': 'grovs_production'},
+                     'command': ['postgres', '-c', 'max_connections=' + CONFIG['POSTGRES_MAX_CONNECTIONS']],
+                     'volumes': ['pg_data:/var/lib/postgresql/data'],
+                     'healthcheck': {'test': ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB'],
+                                     'interval': '10s', 'timeout': '5s', 'retries': 10}},
+        'redis': {'image': IMAGES['redis'], 'restart': 'unless-stopped',
+                  'command': ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction'],
+                  'volumes': ['redis_data:/data'],
+                  'healthcheck': {'test': ['CMD', 'redis-cli', 'ping'], 'interval': '10s', 'timeout': '5s', 'retries': 10}},
+        'clickhouse': {'image': IMAGES['clickhouse'], 'restart': 'unless-stopped',
+                       'environment': {'CLICKHOUSE_DB': 'grovs_production', 'CLICKHOUSE_USER': 'grovs',
+                                       'CLICKHOUSE_PASSWORD': '${CLICKHOUSE_PASSWORD}'},
+                       'volumes': ['clickhouse_data:/var/lib/clickhouse'],
+                       'ulimits': {'nofile': {'soft': 262144, 'hard': 262144}},
+                       'healthcheck': {'test': ['CMD', 'wget', '--spider', '-q', 'http://localhost:8123/ping'],
+                                       'interval': '10s', 'timeout': '5s', 'retries': 30}},
+        'migrate': app(['bash', '-c', 'bin/rails db:prepare && bin/rails db:seed && bin/rails clickhouse:setup'],
+                       restart='no', depends_on=healthy('postgres', 'redis', 'clickhouse')),
+        'web': app(['bundle', 'exec', 'puma', '-b', 'tcp://0.0.0.0:3000'], expose=[3000], labels=links_routing(),
+                   depends_on={'migrate': {'condition': 'service_completed_successfully'}},
+                   healthcheck={'test': ['CMD', 'curl', '-f', 'http://localhost:3000/up'], 'interval': '10s',
+                                'timeout': '5s', 'retries': 30, 'start_period': '60s'}),
+        'worker-1': app(sidekiq('scheduler', 'worker', 'batch'), depends_on=healthy('web')),
+        'worker-2': app(sidekiq('maintenance', 'device_updates'), depends_on=healthy('web')),
+        'dashboard': {'image': IMAGES['dashboard'], 'restart': 'unless-stopped', 'expose': [3000],
+                      'environment': {'API_URL': '${SERVER_HOST_PROTOCOL}' + host('api'),
+                                      'OAUTH_CLIENT_UID': '${OAUTH_CLIENT_UID}',
+                                      'OAUTH_CLIENT_SECRET': '${OAUTH_CLIENT_SECRET}',
+                                      'HOSTNAME': '0.0.0.0', 'PORT': '3000'},
+                      'depends_on': healthy('web')},
+    }
+    compose = {'services': services,
+               'volumes': {name: {} for name in ('pg_data', 'redis_data', 'clickhouse_data', 'storage')}}
+
+    # URL-safe passwords for connection strings; hex keys everywhere else.
+    helpers = {'POSTGRES_PASSWORD': '${password:32}', 'CLICKHOUSE_PASSWORD': '${password:32}',
+               'BOOTSTRAP_ADMIN_PASSWORD': '${password:24}', 'OAUTH_CLIENT_UID': '${hash:48}'}
+    variables = {'main_domain': '${domain}'}
+    variables.update({key.lower(): helpers.get(key, '${hash:64}') for key in secrets})
+    env = ['SERVER_HOST=${main_domain}', 'DOMAIN_LIVE=${main_domain}', 'DOMAIN_TEST=test.${main_domain}',
+           'SERVER_HOST_PROTOCOL=http://', 'GROVS_CERT_RESOLVER=', 'BOOTSTRAP_ADMIN_EMAIL=admin@${main_domain}']
+    env += [f'{key}=${{{key.lower()}}}' for key in secrets]
+    domains = [('dashboard', 'dashboard')] + [(prefix, 'web') for prefix in
+                                              ('api', 'sdk', 'mcp', 'go', 'preview', 'links', 'links.test')]
+    toml = '[variables]\n' + ''.join(f'{k} = "{v}"\n' for k, v in variables.items())
+    toml += '\n[config]\nenv = [\n' + ''.join(f'  "{entry}",\n' for entry in env) + ']\n'
+    for prefix, service in domains:
+        toml += f'\n[[config.domains]]\nserviceName = "{service}"\nport = 3000\nhost = "{prefix}.${{main_domain}}"\n'
+    meta = {'id': 'grovs', 'name': 'Grovs', 'version': CONFIG['GROVS_VERSION'],
+            'description': 'Self-hosted deep linking, attribution and analytics for mobile and web apps.',
+            'logo': 'logo.svg',
+            'links': {'github': 'https://github.com/grovs-io/self-host', 'website': 'https://www.grovs.io',
+                      'docs': 'https://github.com/grovs-io/self-host/blob/main/deploy/catalogs/dokploy/README.md'},
+            'tags': ['analytics', 'developer-tools']}
+    return compose, toml, meta
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__); parser.add_argument('--check',action='store_true'); args=parser.parse_args()
     ts,meta=easypanel()
-    outputs={'deploy/catalogs/caprover/grovs.yml':json.dumps(caprover(),indent=2)+'\n',
+    compose,toml,dokploy_meta=dokploy()
+    compose_text=yaml_text(compose)
+    # Dokploy's Advanced > Import accepts this blob directly, so the template can be tested before it is listed.
+    import_blob=base64.b64encode(json.dumps({'compose':compose_text,'config':toml},indent=2).encode()).decode()
+    outputs={'deploy/catalogs/dokploy/grovs/docker-compose.yml':compose_text,
+             'deploy/catalogs/dokploy/grovs/template.toml':toml,
+             'deploy/catalogs/dokploy/import.base64':import_blob+'\n',
+             'deploy/catalogs/dokploy/grovs/meta.json':json.dumps(dokploy_meta,indent=2)+'\n',
+             'deploy/catalogs/dokploy/grovs/logo.svg':(ROOT/'deploy/catalogs/shared/assets/logo-square-black.svg').read_text(),
+             'deploy/catalogs/caprover/grovs.yml':json.dumps(caprover(),indent=2)+'\n',
              'deploy/catalogs/easypanel/grovs/index.ts':ts,
              'deploy/catalogs/easypanel/grovs/meta.yaml':json.dumps(meta,indent=2)+'\n'}
     for name,text in outputs.items():
         path=ROOT/name
         if args.check:
             if not path.exists() or path.read_text()!=text: raise SystemExit(name+' is stale; run scripts/generate-panel-catalogs.py')
-        else: path.write_text(text)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
 
 if __name__=='__main__': main()
