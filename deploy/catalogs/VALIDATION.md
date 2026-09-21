@@ -9,6 +9,7 @@ installation, TLS issuance or provider metadata delivery.
 | CapRover upstream `validate_apps` and `build` | Passed with the candidate copied into the upstream tree |
 | Easypanel template generation, TypeScript and Zod schema checks | Passed with the candidate copied into the upstream tree |
 | Dokploy upstream `generate-meta.js --check`, `validate-template.ts` and `validate-docker-compose.ts` | Passed with the blueprint copied into the upstream tree; `docker compose config` accepts the file with the template environment |
+| Dokploy live deployment, 16 to 21 September 2026 | Template created on a Dokploy instance with a remote Debian 13 server, both through Base64 import and from the Templates dialog: migrations and seed, dashboard login, all eight generated hosts, project links on wildcard hosts over HTTP and HTTPS. Not yet covered: wildcard HTTPS on a real domain, reboot, backup/restore |
 | Easypanel playground production build | Passed using Node 22; upstream Next.js 12 fails with this workstation's Node 26 |
 | DigitalOcean Packer recipe | `packer init` and `packer validate` passed with a dummy token; no `build` run |
 | Vultr Packer recipe | `packer init` and `packer validate` passed with a dummy token; no `build` run |
@@ -29,11 +30,12 @@ Upstream revisions checked:
 - Build and launch DigitalOcean/Vultr marketplace images, confirm cleanup and
   unique instance identity, and complete vendor onboarding.
 - Execute the Ansible installer on Ubuntu in a new Linode.
-- Import and start the panel templates in actual Easypanel/CapRover/Dokploy instances.
+- Import and start the panel templates in actual Easypanel/CapRover instances.
+- Test the Dokploy template on a real domain with a DNS-01 resolver, then reboot and backup/restore.
 - Verify wildcard HTTPS, migrations against real databases, dashboard login,
   project links, event ingestion, uploads, reboot and backup/restore.
 - Capture genuine application screenshots, submit packages for provider review
-  and record resulting catalog URLs.
+  and record resulting catalog URLs. Dokploy: [templates PR 1174](https://github.com/Dokploy/templates/pull/1174) is open.
 
 Use [the provider instructions](README.md) for the next steps. Do not mark a
 provider's live-testing checklist complete based on this local record.

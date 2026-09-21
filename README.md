@@ -76,10 +76,12 @@ The [Railway template](https://railway.com/deploy/grovs-community) is published;
 live deployment verification is pending. Render's Blueprint and the cloud launch
 links above are available independently of marketplace approval.
 
+The Grovs template for the Dokploy catalog is
+[submitted and under review](https://github.com/Dokploy/templates/pull/1174).
 **No submissions have been made to the other official catalogs yet.**
 DigitalOcean, Vultr, Akamai / Linode, Easypanel and CapRover have
 [prepared submission packages](deploy/catalogs/README.md) with local checks.
-Coolify and Dokploy currently use Compose imports. See the
+Coolify currently uses a Compose import. See the
 [submission tracker](docs/deploy/marketplaces.md) for remaining validation,
 publisher onboarding and catalog work.
 

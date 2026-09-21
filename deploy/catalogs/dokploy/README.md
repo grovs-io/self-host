@@ -7,8 +7,10 @@ native template candidate for the
 
 `grovs/` follows the catalog layout: `docker-compose.yml`, `template.toml`,
 `meta.json` and `logo.svg`. It passes the upstream metadata, template and
-Compose validators. Deployment in a Dokploy instance, wildcard HTTPS and
-the upstream pull request are still pending.
+Compose validators and was deployed on a Dokploy instance, both through the
+Base64 import and from the Templates dialog. The upstream submission is
+[Dokploy templates PR 1174](https://github.com/Dokploy/templates/pull/1174).
+Wildcard HTTPS on a real domain has not been verified yet.
 
 ## Prepare and validate the submission
 
