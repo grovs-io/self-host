@@ -17,8 +17,8 @@
       },
       "envVars": [
         {
-          "key": "CLICKHOUSE_DB",
-          "value": "grovs_production"
+          "key": "CLICKHOUSE_RUN_AS_ROOT",
+          "value": "1"
         },
         {
           "key": "CLICKHOUSE_USER",

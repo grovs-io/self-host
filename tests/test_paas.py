@@ -82,6 +82,9 @@ class PaasTest(unittest.TestCase):
                 self.assertNotIn("preDeployCommand", service)
         self.assertEqual(services["grovs-clickhouse"]["type"], "pserv")
         self.assertEqual(services["grovs-clickhouse"]["disk"]["mountPath"], "/var/lib/clickhouse")
+        clickhouse = {e["key"]: e.get("value") for e in services["grovs-clickhouse"]["envVars"]}
+        self.assertNotIn("CLICKHOUSE_DB", clickhouse)
+        self.assertEqual(clickhouse["CLICKHOUSE_RUN_AS_ROOT"], "1")
         self.assertEqual(services["grovs-redis"]["maxmemoryPolicy"], "noeviction")
         for name in ("grovs-worker-1", "grovs-worker-2", "grovs-dashboard"):
             role = services[name]

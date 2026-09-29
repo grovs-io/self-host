@@ -73,7 +73,9 @@ def render_blueprint(config, cmds):
                  "image": {"url": "clickhouse/clickhouse-server:25.3"}, "plan": "2c-4g",
                  "region": "frankfurt", "autoDeployTrigger": "off",
                  "disk": {"name": "clickhouse-data", "mountPath": "/var/lib/clickhouse", "sizeGB": 50},
-                 "envVars": [value("CLICKHOUSE_DB", "grovs_production"), value("CLICKHOUSE_USER", "grovs"),
+                 # Render blocks the image's user switch and its temporary init server;
+                 # clickhouse:setup creates the database instead.
+                 "envVars": [value("CLICKHOUSE_RUN_AS_ROOT", "1"), value("CLICKHOUSE_USER", "grovs"),
                              {"key": "CLICKHOUSE_PASSWORD", "generateValue": True}]},
                 {"name": "grovs-redis", "type": "keyvalue", "plan": "1g", "region": "frankfurt",
                  "ipAllowList": [], "maxmemoryPolicy": "noeviction"}]
