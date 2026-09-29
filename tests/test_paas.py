@@ -103,7 +103,7 @@ class PaasTest(unittest.TestCase):
         self.assertEqual(worker["DATABASE_URL"], env["DATABASE_URL"])
         self.assertEqual(worker["CLICKHOUSE_PASSWORD"], env["CLICKHOUSE_PASSWORD"])
 
-    def test_render_commands_have_no_dollar_signs(self):
+    def test_render_commands_need_no_shell_quoting(self):
         config = json.loads((ROOT / "render.yaml").read_text())
         services = {s["name"]: s for s in config["services"]}
         scripts = {k: shlex.split(v)[2] for k, v in
@@ -113,9 +113,14 @@ class PaasTest(unittest.TestCase):
                     "worker-1": services["grovs-worker-1"]["dockerCommand"],
                     "worker-2": services["grovs-worker-2"]["dockerCommand"]}
         for role, command in commands.items():
-            self.assertNotIn("$", command, role)
-            encoded = shlex.split(shlex.split(command)[2])[1]
-            self.assertEqual(base64.b64decode(encoded).decode(), scripts[role], role)
+            # Render runs `bash -c` with the rest of the line as one argument.
+            program, flag, body = command.split(" ", 2)
+            self.assertEqual((program, flag), ("bash", "-c"), role)
+            for char in "'\"$\\":
+                self.assertNotIn(char, body, role)
+            body = body.replace("> /tmp/grovs.sh && exec bash -e /tmp/grovs.sh", "")
+            result = subprocess.run(["bash", "-c", body], capture_output=True, text=True)
+            self.assertEqual(result.stdout, scripts[role], role)
 
     def test_embedded_commands_parse(self):
         for command in json.loads((ROOT / "deploy/paas/commands.json").read_text()).values():

@@ -40,11 +40,12 @@ def commands():
     return result
 
 
-def dollar_free(command):
-    """Render substitutes $NAME in commands, so ship the script base64-encoded."""
+def render_command(command):
+    """Render passes everything after `bash -c` to bash verbatim, quotes included,
+    so the script travels base64-encoded in a command that needs no quoting."""
     script = shlex.split(command)[2]
     encoded = base64.b64encode(script.encode()).decode()
-    return f"bash -c 'echo {encoded} | base64 -d > /tmp/grovs.sh && exec bash -e /tmp/grovs.sh'"
+    return f"bash -c echo {encoded} | base64 -d > /tmp/grovs.sh && exec bash -e /tmp/grovs.sh"
 
 
 def render_blueprint(config, cmds):
@@ -98,9 +99,9 @@ def render_blueprint(config, cmds):
         item = {"name": "grovs-" + role, "type": "web" if role == "web" else "worker",
                 "runtime": "image", "image": {"url": backend_image}, "plan": "1c-2g",
                 "region": "frankfurt", "numInstances": 1, "autoDeployTrigger": "off",
-                "dockerCommand": dollar_free(cmds[role]), "envVars": role_env}
+                "dockerCommand": render_command(cmds[role]), "envVars": role_env}
         if role == "web":
-            item.update(healthCheckPath="/up", preDeployCommand=dollar_free(cmds["migrate"]))
+            item.update(healthCheckPath="/up", preDeployCommand=render_command(cmds["migrate"]))
         services.append(item)
     services.append({"name": "grovs-dashboard", "type": "web", "runtime": "image",
                      "image": {"url": "ghcr.io/grovs-io/dashboard:" + config["GROVS_VERSION"]},
