@@ -9,8 +9,7 @@ run in Frankfurt by default. **This is a paid deployment**, plus object storage.
 Review the plans and disks in the Blueprint before confirming.
 
 This Blueprint was deployed end to end on Render: migrations, workers, custom
-domains with wildcard HTTPS, sign-in, project links, uploads to Google Cloud
-Storage and analytics.
+domains with wildcard HTTPS, sign-in, project links, uploads and analytics.
 
 ## 1. Prepare domains and object storage
 
@@ -27,24 +26,16 @@ Use dedicated subdomains if your main domain already hosts a website. You need
 to be able to add CNAME records for these names.
 [Render custom domains](https://render.com/docs/custom-domains)
 
-Uploads go to a private bucket that the API and both workers share, because a
-Render disk cannot be shared between services.
-[Persistent disks](https://render.com/docs/disks) Any S3-compatible storage
-works:
+Uploads go to a private S3-compatible bucket that the API and both workers
+share, because a Render disk cannot be shared between services.
+[Persistent disks](https://render.com/docs/disks) Use bucket-scoped
+credentials that can list, read, write and delete objects.
 
-- **Amazon S3:** create a bucket and an access key limited to it (list, read,
-  write and delete). Enter the bucket's region as `AWS_S3_REGION`.
-- **Google Cloud Storage:** create a bucket, a service account with **Storage
-  Object Admin** on that bucket, and an HMAC key for it under **Cloud Storage →
-  Settings → Interoperability**. Use `auto` as `AWS_S3_REGION` and set
-  `S3_ENDPOINT=https://storage.googleapis.com` (see step 2). New Google Cloud
-  organizations block service account keys by default; override both
-  `iam.disableServiceAccountKeyCreation` and
-  `iam.managed.disableServiceAccountKeyCreation` for the project, and restore
-  them when you delete the key.
-- **Other providers** (Cloudflare R2, DigitalOcean Spaces, MinIO): use their
-  S3-compatible HTTPS endpoint as `S3_ENDPOINT` and, if required,
-  `S3_FORCE_PATH_STYLE`.
+- **Amazon S3:** enter the bucket's region as `AWS_S3_REGION` and leave
+  `S3_ENDPOINT` unset.
+- **Any other S3-compatible provider:** set `S3_ENDPOINT` to its S3 API endpoint
+  (see step 2) and use the region it documents (often `auto`). Set
+  `S3_FORCE_PATH_STYLE=false` if the provider only accepts virtual-hosted URLs.
 
 ## 2. Create the Blueprint
 

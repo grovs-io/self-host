@@ -72,9 +72,9 @@ or the [deployment guide index](docs/deploy/README.md).
 
 ### Marketplace status
 
-The [Railway template](https://railway.com/deploy/grovs-community) is published;
-live deployment verification is pending. Render's Blueprint has been deployed
-end to end on Render. It and the cloud launch links above are available
+The [Railway template](https://railway.com/deploy/grovs-community) is published
+and has been deployed end to end on Railway. Render's Blueprint has been
+deployed end to end on Render. It and the cloud launch links above are available
 independently of marketplace approval.
 
 The Grovs template for the Dokploy catalog is

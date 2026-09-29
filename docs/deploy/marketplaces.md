@@ -20,7 +20,7 @@ ranking benefits are controlled by the provider.
 | 2 | Scaleway | [Marketplace partner application](https://www.scaleway.com/en/marketplace/become-partner/) | Instance guide and cloud-init | Confirm distribution format with partner team, package and test it, complete their onboarding |
 | 2 | AWS | [AWS Marketplace seller guide](https://docs.aws.amazon.com/marketplace/latest/userguide/user-guide-for-sellers.html) | CloudFormation template | Seller onboarding, choose a supported offer format, build/test an image or container product, submit for review |
 | 2 | Google Cloud | [Marketplace partners](https://cloud.google.com/marketplace/docs/partners) | Cloud Shell VM deployment | Partner onboarding, supported product package, technical review and publication |
-| Published | Railway | [Public Grovs template](https://railway.com/deploy/grovs-community) | Published template and guide | Complete live deployment tests; approval/verification are separate from publication |
+| Published | Railway | [Public Grovs template](https://railway.com/deploy/grovs-community) | Published template and guide, deployed end to end on Railway (Hobby compact layout) | Republish the template overview; approval/verification are separate from publication |
 | Available | Render | [Deploy button](https://render.com/docs/deploy-to-render) | Public Blueprint and button, deployed end to end on Render | None for the button; Render's template gallery is curated by Render, with no public submission route |
 
 There are no Grovs listing URLs for the new cloud providers yet. Replace a console

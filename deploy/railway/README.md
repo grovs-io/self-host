@@ -24,9 +24,13 @@ This template wires the services together and generates their shared secrets.
 
 ## Dependencies for Grovs Community
 
-- Use a Railway plan that supports seven services, sufficient RAM/storage and
-  the custom domains below. Compute, volumes and network usage are billed by Railway.
+- Use the Hobby or Pro plan. The Trial plan allows only 5 services per project;
+  Grovs needs 7. Hobby allows 2 custom domains per service, so it uses the
+  compact domain layout below. Compute, volumes and network usage are billed by
+  Railway.
 - Bring a private S3-compatible bucket and bucket-scoped credentials for uploads.
+  For Amazon S3 leave `S3_ENDPOINT` empty; for another provider set it to the
+  provider's S3 API endpoint.
 - Choose an app base domain and production/test link base domains you control.
 
 For example, set `SERVER_HOST=grovs.example.com`,
@@ -43,12 +47,15 @@ deployment and shares them with the workers and dashboard through references.
    If databases are still starting, wait for them to be ready and redeploy `web`.
 3. In Railway Networking, add these custom domains, all targeting port **3000**:
    - `dashboard`: `dashboard.grovs.example.com`
-   - `web`: `api.grovs.example.com`, `sdk.grovs.example.com`,
+   - `web` on Pro: `api.grovs.example.com`, `sdk.grovs.example.com`,
      `mcp.grovs.example.com`, `go.grovs.example.com`, `preview.grovs.example.com`,
      `*.links.example.com` and `*.test.links.example.com`
-4. Add Railway's DNS and certificate-verification records at your DNS provider.
-   The generated Railway domains are useful for health checks; use your custom
-   domains for Grovs login and links.
+   - `web` on Hobby: `*.grovs.example.com` and `*.links.example.com`. Test links
+     are not served until you add `*.test.links.example.com` on Pro.
+4. Add every record Railway shows for each domain at your DNS provider: the
+   CNAME, an `_acme-challenge` CNAME for wildcards and the `_railway-verify`
+   TXT record. Certificates are not issued until the TXT record exists. Use
+   your custom domains for Grovs login and links.
 5. Sign in at `https://dashboard.grovs.example.com` using `BOOTSTRAP_ADMIN_EMAIL`
    and the generated `BOOTSTRAP_ADMIN_PASSWORD` in `web`'s variables.
 6. Check the API `/up` endpoint, create a project, open production and test links,
@@ -62,8 +69,9 @@ migrations finish. Update the dashboard and both workers to the same version,
 then restart them. Keep `worker-1` at **one instance**, including during rollouts,
 because it owns the scheduler.
 
-This template has configuration checks but has not yet been validated with a
-live Railway deployment.
+This template has been deployed end to end on Railway: migrations, workers,
+custom domains with wildcard HTTPS, sign-in, project links, uploads and
+analytics.
 
 - [Full Railway guide](https://github.com/grovs-io/self-host/blob/main/docs/deploy/railway.md)
 - [Source and deployment configuration](https://github.com/grovs-io/self-host)
