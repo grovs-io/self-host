@@ -6,27 +6,18 @@ Use a fresh **Ubuntu 24.04 x86_64** server with at least **4 vCPU, 8 GB RAM
 and 80 GB SSD**, a public IPv4 address, an SSH key, and a domain you control.
 The cloud provider bills your account for the server, storage and traffic.
 
-## Create startup data
+## Prepare startup data
 
-On your workstation, generate startup data with your domain and administrator email:
+Copy the startup block from
+[Install on first boot](cloud-vm.md#install-on-first-boot) and replace the
+example domain and email with yours. It installs Docker and the full stack on
+the server's first boot; passwords are generated on the server.
 
-```bash
-git clone https://github.com/grovs-io/self-host.git
-cd self-host
-python3 scripts/generate-cloud-init.py \
-  --domain grovs.example.com \
-  --email admin@example.com > /tmp/grovs-cloud-init.yaml
-```
-
-The file installs Docker and the full Compose stack on first boot. It pins the
-stack source to a reviewed commit and defaults to image release `2.3.1`. Use
-`--version X.Y.Z` to select another published release. Passwords are generated on
-the server; the startup file contains no generated credentials.
 ## Create the Cloud server
 
 1. Open your Hetzner project and create a server. Select an x86 server type,
    the plain **Ubuntu 24.04** image, and sufficient disk space.
-2. Enable public IPv4, add your SSH public key, and paste the generated file
+2. Enable public IPv4, add your SSH public key, and paste the startup block
    into the **Cloud config** field before creating the server.
 3. Attach a Hetzner Firewall allowing inbound TCP 80/443 from the internet and
    TCP 22 only from your public IP. Allow outbound traffic.

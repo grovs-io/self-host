@@ -6,26 +6,17 @@ Use a fresh **Ubuntu 24.04 x86_64** server with at least **4 vCPU, 8 GB RAM
 and 80 GB SSD**, a public IPv4 address, an SSH key, and a domain you control.
 The cloud provider bills your account for the server, storage and traffic.
 
-## Create startup data
+## Prepare startup data
 
-On your workstation, generate startup data with your domain and administrator email:
+Copy the startup block from
+[Install on first boot](cloud-vm.md#install-on-first-boot) and replace the
+example domain and email with yours. It installs Docker and the full stack on
+the server's first boot; passwords are generated on the server.
 
-```bash
-git clone https://github.com/grovs-io/self-host.git
-cd self-host
-python3 scripts/generate-cloud-init.py \
-  --domain grovs.example.com \
-  --email admin@example.com > /tmp/grovs-cloud-init.yaml
-```
-
-The file installs Docker and the full Compose stack on first boot. It pins the
-stack source to a reviewed commit and defaults to image release `2.3.1`. Use
-`--version X.Y.Z` to select another published release. Passwords are generated on
-the server; the startup file contains no generated credentials.
 ## Create the Droplet
 
 1. Create a Droplet using the plain Ubuntu 24.04 image and the resources above.
-2. Add your SSH public key. Under **Additional Options → Startup scripts**, paste the complete generated file, including `#cloud-config`.
+2. Add your SSH public key. Under **Additional Options → Startup scripts**, paste the startup block, including `#cloud-config`.
 3. Create the Droplet. Attach a Cloud Firewall allowing inbound TCP 80/443 from
    the internet and TCP 22 only from your public IP. Allow outbound traffic.
 4. Connect as `root` to its public IPv4 address.

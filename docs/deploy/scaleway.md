@@ -25,29 +25,14 @@ stack on reboot. Use the public IPv4 shown in your provider's console for DNS.
 
 ## Automate first boot
 
-For a fresh Instance that has not started yet, you can instead generate startup
-data on your workstation:
-
-On your workstation, generate startup data with your domain and administrator email:
-
-```bash
-git clone https://github.com/grovs-io/self-host.git
-cd self-host
-python3 scripts/generate-cloud-init.py \
-  --domain grovs.example.com \
-  --email admin@example.com > /tmp/grovs-cloud-init.yaml
-```
-
-The file installs Docker and the full Compose stack on first boot. It pins the
-stack source to a reviewed commit and defaults to image release `2.3.1`. Use
-`--version X.Y.Z` to select another published release. Passwords are generated on
-the server; the startup file contains no generated credentials.
-
-With the Scaleway CLI configured for the correct project and zone, attach the
-file **before the first boot**, replacing `SERVER_ID` with your Instance ID:
+To install on the Instance's first boot instead of over SSH, copy the startup
+block from [Install on first boot](cloud-vm.md#install-on-first-boot), replace
+the example domain and email, and add it as cloud-init user data before the
+Instance first starts. If you use the Scaleway CLI, save the block as
+`grovs-cloud-init.yaml` and attach it, replacing `SERVER_ID` with your Instance ID:
 
 ```bash
-scw instance server update SERVER_ID cloud-init=@/tmp/grovs-cloud-init.yaml
+scw instance server update SERVER_ID cloud-init=@grovs-cloud-init.yaml
 scw instance server start SERVER_ID
 ```
 

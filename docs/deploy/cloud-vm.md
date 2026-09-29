@@ -4,7 +4,36 @@ Use a fresh **Ubuntu 24.04 x86_64** server with at least **4 vCPU, 8 GB RAM
 and 80 GB SSD**, a public IPv4 address, an SSH key, and a domain you control.
 The cloud provider bills your account for the server, storage and traffic.
 
+## Install on first boot
+
+Most providers let you paste startup data (cloud-init) when you create a
+server. Copy this block, replace `grovs.example.com` and `admin@example.com`
+with your app domain and administrator email, and paste it into that field:
+
+```yaml
+#cloud-config
+runcmd:
+  - |
+    set -e
+    curl -fsSL -o /root/grovs-bootstrap.sh https://raw.githubusercontent.com/grovs-io/self-host/d9f291fb7a943adc8b712696342180ea63438cfd/deploy/vm/bootstrap.sh
+    echo "8371c66310080619effb5c757a5e259534ee9b6262c124ff38d5307339d5e64e  /root/grovs-bootstrap.sh" | sha256sum -c
+    GROVS_DOMAIN=grovs.example.com GROVS_ADMIN_EMAIL=admin@example.com GROVS_VERSION=2.3.1 GROVS_STACK_REF=d9f291fb7a943adc8b712696342180ea63438cfd bash /root/grovs-bootstrap.sh
+```
+
+On first boot the server downloads the reviewed bootstrap script, checks its
+checksum and stops if it does not match, then installs Docker and the full
+stack. Passwords are generated on the server; the block contains none. Setup
+takes a few minutes after the server starts. Continue with
+[DNS and first login](#dns-and-first-login), and check progress with
+`sudo cloud-init status --wait` and `sudo tail -100 /var/log/cloud-init-output.log`.
+
+To script server creation instead, `python3 scripts/generate-cloud-init.py
+--domain grovs.example.com --email admin@example.com` prints an equivalent file
+with the bootstrap embedded.
+
 ## Install over SSH
+
+If the server is already running, install over SSH instead.
 
 On the new server, download the reviewed bootstrap script and inspect it:
 

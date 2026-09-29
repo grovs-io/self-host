@@ -1,8 +1,10 @@
 """Validate first-boot payloads without executing provisioning or contacting clouds."""
 import base64
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import re
 import shutil
 import tempfile
 import subprocess
@@ -13,9 +15,28 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("cloud_init", ROOT / "scripts/generate-cloud-init.py")
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
+GENERATOR = (ROOT / "scripts/generate-cloud-init.py").read_text()
+MODULE_DEFAULTS = {name: re.search(rf'"--{flag}", default="([^"]+)"', GENERATOR).group(1)
+                   for name, flag in (("version", "version"), ("stack_ref", "stack-ref"))}
 
 
 class CloudInitTest(unittest.TestCase):
+    def test_guide_startup_block_pins_the_reviewed_bootstrap(self):
+        guide = (ROOT / "docs/deploy/cloud-vm.md").read_text()
+        block = re.search(r"```yaml\n(#cloud-config\n.*?)```", guide, re.S).group(1)
+        command = block.split("- |\n", 1)[1]
+        ref = re.search(r"self-host/([0-9a-f]{40})/deploy/vm/bootstrap.sh", command).group(1)
+        checksum = re.search(r'echo "([0-9a-f]{64})  /root/grovs-bootstrap.sh" \| sha256sum -c', command).group(1)
+        self.assertEqual(command.split("\n")[0].strip(), "set -e")
+        self.assertIn(f"GROVS_STACK_REF={ref} ", command)
+        self.assertIn(f"GROVS_VERSION={MODULE_DEFAULTS['version']} ", command)
+        self.assertEqual(ref, MODULE_DEFAULTS["stack_ref"])
+        pinned = subprocess.run(["git", "-C", str(ROOT), "show", f"{ref}:deploy/vm/bootstrap.sh"],
+                                capture_output=True)
+        if pinned.returncode != 0:
+            self.skipTest("Pinned commit is not available in this checkout")
+        self.assertEqual(hashlib.sha256(pinned.stdout).hexdigest(), checksum)
+
     def generate(self, *extra):
         return subprocess.run([sys.executable, str(ROOT / "scripts/generate-cloud-init.py"),
                                "--domain", "grovs.example.com", "--email", "admin@example.com",

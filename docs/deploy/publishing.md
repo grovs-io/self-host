@@ -122,7 +122,8 @@ who prefer reviewing their infrastructure as code.
 ## Azure and Ubuntu cloud servers
 
 The [Azure button](azure.md) consumes the public `deploy/azure/azuredeploy.json`.
-Recompile it when `main.bicep` or `deploy/vm/bootstrap.sh` changes. The shared
-`scripts/generate-cloud-init.py` embeds the same bootstrap for DigitalOcean,
-Hetzner and Scaleway. Keep the image release and reviewed stack reference in
-sync with the deployment guides. [Microsoft documents the button format](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-to-azure-button).
+Recompile it when `main.bicep` or `deploy/vm/bootstrap.sh` changes. The startup block in
+`docs/deploy/cloud-vm.md` (used by DigitalOcean, Hetzner and Scaleway) and
+`scripts/generate-cloud-init.py` pin the same reviewed stack reference and
+image release. When the bootstrap changes, update the reference and the
+block's checksum together; `tests/test_cloud_bootstrap.py` checks they match. [Microsoft documents the button format](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-to-azure-button).
