@@ -109,26 +109,35 @@ export function generate(input: Input): Output {
   const env: Record<string,string> = { ...baseEnv };
   for (const key of secretKeys) env[key] = secret();
   for (const [field,key] of Object.entries(fields)) env[key] = String(input[field as keyof Input] || "");
-  const host = (role: string) => `$(PROJECT_NAME)_${input.servicePrefix}-${role}`;
+  env.ACTIVE_STORAGE_SERVICE = input.s3Bucket ? "amazon" : "local";
+  // Easypanel's project_service names contain an underscore, which Ruby rejects in URLs; use the service alias.
+  const host = (role: string) => `${input.servicePrefix}-${role}`;
   Object.assign(env, { POSTGRES_HOST: host("postgres"), REDIS_HOST: host("redis"),
     CLICKHOUSE_HOST: host("clickhouse"), WEB_HOST: host("web"), WEB_PORT: "3000",
     SMTP_DOMAIN: input.appDomain, MAILER_FROM: `Grovs <noreply@${input.appDomain}>` });
-  const add = (role: string, image: string, values: Record<string,string>, command?: string, volume?: string) => {
+  const add = (role: string, image: string, values: Record<string,string>, command?: string, volume?: string, mounts: any[] = []) => {
     services.push({ type: "app", data: {
       serviceName: `${input.servicePrefix}-${role}`, source: { type: "image", image },
       env: Object.entries(values).map(([k,v]) => `${k}=${v}`).join("\\n"),
       deploy: { command: command || null, replicas: 1, zeroDowntime: false },
-      mounts: volume ? [{ type: "volume", name: "data", mountPath: volume }] : [],
+      mounts: volume ? [{ type: "volume", name: "data", mountPath: volume }] : mounts,
     }});
   };
   add("postgres",images.postgres,{POSTGRES_DB:"grovs_production",POSTGRES_USER:"grovs",POSTGRES_PASSWORD:env.POSTGRES_PASSWORD},undefined,"/var/lib/postgresql/data");
   add("redis",images.redis,{},`redis-server --appendonly yes --maxmemory-policy noeviction --requirepass ${env.REDIS_PASSWORD}`,"/data");
   add("clickhouse",images.clickhouse,{CLICKHOUSE_DB:"grovs_production",CLICKHOUSE_USER:"grovs",CLICKHOUSE_PASSWORD:env.CLICKHOUSE_PASSWORD},undefined,"/var/lib/clickhouse");
-  for (const role of ["web","worker-1","worker-2"] as const) add(role,images.web,env,commands[role]);
+  // Easypanel stores the web volume in this host folder; workers bind it to share uploads.
+  add("web",images.web,env,commands.web,undefined,[{ type: "volume", name: "storage", mountPath: "/app/storage" }]);
+  const shared = [{ type: "bind", hostPath: `/etc/easypanel/projects/$(PROJECT_NAME)/${input.servicePrefix}-web/volumes/storage`, mountPath: "/app/storage" }];
+  for (const role of ["worker-1","worker-2"] as const) add(role,images.web,env,commands[role],undefined,shared);
   add("dashboard",images.dashboard,{API_URL:`https://api.${input.appDomain}`,OAUTH_CLIENT_UID:env.OAUTH_CLIENT_UID,OAUTH_CLIENT_SECRET:env.OAUTH_CLIENT_SECRET,HOSTNAME:"0.0.0.0",PORT:"3000"});
-  // Explicit hosts get HTTPS. Wildcard link routing/certificates are configured in the guide.
+  // Explicit hosts get HTTPS. Wildcard certificates need a DNS challenge resolver, see the guide.
   const web = services.find(s => s.data.serviceName === `${input.servicePrefix}-web`)!;
-  if (web.type === "app") web.data.domains = ["api","sdk","mcp","go","preview"].map(prefix => ({host:`${prefix}.${input.appDomain}`,port:3000,https:true}));
+  // Wildcard domains carry the per-project link hosts, including links.<domain>.
+  if (web.type === "app") web.data.domains = [
+    ...["api","sdk","mcp","go","preview"].map(prefix => ({host:`${prefix}.${input.appDomain}`,port:3000,https:true})),
+    ...[input.linksDomain, input.testDomain].map(host => ({host,port:3000,https:true,wildcard:true})),
+  ];
   const dashboard = services[services.length-1];
   if (dashboard.type === "app") dashboard.data.domains = [{host:`dashboard.${input.appDomain}`,port:3000,https:true}];
   return {services};
@@ -137,14 +146,14 @@ export function generate(input: Input): Output {
     properties={'servicePrefix': {'type':'string','title':'Service name prefix','default':'grovs','pattern':'^[a-z][a-z0-9-]+$'}}
     for key, (_, label, example) in FIELDS.items():
         properties[key]={'type':'string','title':label,'default':'','description':('Example: '+example if example else label),'pattern':'^[^\\r\\n]*$'}
-        if key!='s3Endpoint': properties[key]['minLength']=1
+        if not key.startswith('s3'): properties[key]['minLength']=1
         if key in ['appDomain','linksDomain','testDomain']: properties[key]['pattern']='^[a-z0-9][a-z0-9.-]*\\.[a-z0-9-]+$'
     metadata={'name':'Grovs Community','description':'Self-hosted deep linking, attribution and analytics for mobile and web apps.',
-      'instructions':'Requires 4 vCPU / 8 GB RAM and a private S3-compatible bucket. Use one replica per service. Configure wildcard routing and TLS before using project links: https://github.com/grovs-io/self-host/blob/main/deploy/catalogs/easypanel/README.md. Read the generated admin password from the web service environment. Preserve secrets and volumes when upgrading; do not regenerate an existing template.',
+      'instructions':'Requires 4 vCPU / 8 GB RAM. Uploads are stored on the server; fill in the bucket fields only to use private S3-compatible storage instead. Use one replica per service. Configure wildcard routing and TLS before using project links: https://github.com/grovs-io/self-host/blob/main/deploy/catalogs/easypanel/README.md. Read the generated admin password from the web service environment. Preserve secrets and volumes when upgrading; do not regenerate an existing template.',
       'links':[{'label':label,'url':url} for label,url in [('Website','https://www.grovs.io'),('Documentation','https://www.grovs.io/docs/self-hosting/introduction'),('Github','https://github.com/grovs-io/backend')]],
       'contributors':[{'name':'Grovs','url':'https://github.com/grovs-io'}],
       'changeLog':[{'date':'2026-09-15','description':'Initial submission package'}],
-      'schema':{'type':'object','required':[k for k in properties if k!='s3Endpoint'],'properties':properties},
+      'schema':{'type':'object','required':[k for k in properties if not k.startswith('s3')],'properties':properties},
       'benefits':[{'title':'Own your data','description':'Operate deep links and analytics in your own account.'}],
       'features':[{'title':'Deep links and analytics','description':'Create branded links and measure engagement using the Grovs SDKs and dashboard.'}], 'tags':['Analytics','Developer Tools']}
     return source,metadata

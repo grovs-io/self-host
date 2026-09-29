@@ -10,9 +10,10 @@ official catalog listing are pending. Use manual import as described below.
 
 ## 1. Prepare your server and storage
 
-Use an existing Easypanel server with **4 vCPU / 8 GB RAM / 80 GB SSD**, domains
-you control and a **private S3-compatible bucket** for uploads. Keep the bucket
-credentials available for the template form. If you need to install the panel,
+Use an existing Easypanel server with **4 vCPU / 8 GB RAM / 80 GB SSD** and
+domains you control. Uploads are stored in a volume on the server by default. A
+private S3-compatible bucket is optional; have its credentials ready only if
+you want uploads there instead. If you need to install the panel,
 follow [Easypanel's setup guide](https://easypanel.io/docs).
 
 Choose three domains, without a scheme or path:
@@ -42,9 +43,10 @@ npm run build-templates
 npm run dev:next -- --port 3010
 ```
 
-Open **http://localhost:3010/?slug=grovs**. Enter your domains, administrator
-email and bucket details. Leave the storage endpoint empty for AWS S3; for
-another provider, enter its S3-compatible HTTPS endpoint.
+Open **http://localhost:3010/?slug=grovs**. Enter your domains and
+administrator email. Leave the bucket fields empty to keep uploads on the
+server. To use S3 instead, fill in the bucket details; leave the endpoint empty
+for AWS S3, or enter another provider's S3-compatible HTTPS endpoint.
 
 Select **Generate**, then **Copy**. The resulting JSON includes generated
 passwords, encryption keys and the credentials you entered. Keep it private and
@@ -70,16 +72,15 @@ The template attaches these fixed hosts on container port **3000**:
 |---|---|
 | Dashboard | `dashboard.<app domain>` |
 | Web | `api`, `sdk`, `mcp`, `go` and `preview` under the app domain |
+| Web, as wildcard domains | the production and test links domains, covering every project host |
 
-Add these domains to **web**, also on port 3000:
-
-- `links.<production links domain>` and `links.<test links domain>`.
-- `*.<production links domain>` and `*.<test links domain>` for project links.
-
-Configure wildcard routing and certificates through Easypanel's proxy settings.
-Wildcard certificates need DNS validation or certificates you supply; a wildcard
-DNS record alone does not enable HTTPS. Check both production and test project
-hosts before using links in your apps.
+Project hosts work as soon as their wildcard DNS records point at the server,
+but their HTTPS certificate needs a DNS challenge. Until you set one up, Traefik
+serves its self-signed Easypanel certificate on them. Create a DNS challenge
+resolver as described in Easypanel's
+[wildcard domain guide](https://easypanel.io/docs/guides/wildcard-domain), then
+select it in the SSL tab of both wildcard domains on **web**. Check both
+production and test project hosts before using links in your apps.
 
 ## 5. Sign in and verify
 
@@ -90,8 +91,8 @@ Check `https://api.<app domain>/up`, create a project and open a link. Verify it
 analytics, an uploaded image, and production/test link HTTPS. Check web's logs
 if migrations fail or the API does not become ready.
 
-For updates, preserve all environment secrets, database volumes and bucket
-contents. Back them up, stop workers, update both Grovs images to the same release,
+For updates, preserve all environment secrets, database volumes and the
+uploads volume or bucket contents. Back them up, stop workers, update both Grovs images to the same release,
 let web complete migrations, then restart workers and dashboard. Keep `worker-1`
 at one instance. Do not generate a replacement template over an existing install.
 

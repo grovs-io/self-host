@@ -65,7 +65,7 @@ guide walks you through installing Grovs. For the shortest server setup, use
 the [Docker Compose installer](#deploy).
 
 Public deployments need your domain and DNS configuration for project links.
-Railway, Render, Easypanel and CapRover also require private S3-compatible object
+Railway, Render and CapRover also require private S3-compatible object
 storage. Cloud providers bill your account for infrastructure. Browse the
 [online self-hosting docs](https://www.grovs.io/docs/self-hosting/introduction)
 or the [deployment guide index](docs/deploy/README.md).

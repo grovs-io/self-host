@@ -5,8 +5,10 @@ For installation, start with the [Easypanel setup guide](../../../docs/deploy/ea
 `grovs/` is a native template candidate for the
 [Easypanel template repository](https://github.com/easypanel-io/templates).
 It generates seven services from public Grovs images and official database
-images. It has passed local schema and secret-sharing checks; installation in
-an Easypanel instance and wildcard HTTPS verification are still pending.
+images. It has passed local schema and secret-sharing checks and was installed
+on an Easypanel instance: migrations, login, fixed hosts with HTTPS, shared
+uploads and project links through wildcard domains. Wildcard certificates through
+a DNS challenge on a real domain have not been verified yet.
 
 ## Prepare and validate the submission
 
@@ -27,16 +29,15 @@ schema, shared credentials, distinct credentials between installations,
 persistent database volumes and private database services.
 
 Use `npm run dev` to open the playground and generate JSON with your own domain
-and private bucket inputs. Import it into an Easypanel instance and complete the
-steps below. Before an upstream PR, add an actual populated-dashboard screenshot
-to `grovs/assets/`, run upstream formatting and `npm run build`, and record the
-live checks from [the package checklist](../README.md). The current package does
-not supply fabricated screenshots or claim those live checks passed.
+inputs. Import it into an Easypanel instance and complete the
+steps below. `grovs/assets/screenshot.png` was captured from the live test
+instance with demo data. Before an upstream PR, run upstream formatting and
+`npm run build`.
 
 ## Installation inputs
 
-Start with one server with 4 vCPU / 8 GB RAM / 80 GB SSD and a private
-S3-compatible bucket. Provide the app base domain, production links domain,
+Start with one server with 4 vCPU / 8 GB RAM / 80 GB SSD. Provide the app base
+domain, production links domain,
 test links domain and first admin email. For example:
 
 | Input | Example |
@@ -45,9 +46,13 @@ test links domain and first admin email. For example:
 | Production links domain | `links.example.com` |
 | Test links domain | `test.links.example.com` |
 
-Enter the bucket region, name, access key and secret. Leave the endpoint empty
-for AWS S3; enter the provider's HTTPS endpoint for another compatible service.
-Use a private bucket: uploads are served through the Grovs API.
+Uploads are stored in the web service's `storage` volume, which Easypanel
+keeps in a folder under `/etc/easypanel/projects`. Both workers bind that
+folder, so all three see the same files. To use a
+private S3-compatible bucket instead, enter its region, name, access key and
+secret; the template then switches all services to S3. Leave the endpoint empty
+for AWS S3, or enter the provider's HTTPS endpoint for another compatible
+service. Uploads are served through the Grovs API either way.
 
 Database, encryption, admin and OAuth secrets are generated once and shared by
 the appropriate services. Save the generated configuration securely. Reopening
@@ -59,17 +64,18 @@ The template attaches `dashboard.<app domain>` to the dashboard and `api`, `sdk`
 `mcp`, `go` and `preview` under the app domain to web, all on container port 3000.
 Point their DNS records at the Easypanel server.
 
-Before using project links, add these domains to **web** in Easypanel:
+It also attaches the production and test links domains to web as wildcard
+domains. Those route every project host, including `links.<links domain>`, with
+a lower priority than the fixed hosts. Point both wildcard DNS records at the
+server.
 
-- `links.<production links domain>` and `links.<test links domain>`.
-- A wildcard for `*.<production links domain>` and for `*.<test links domain>`.
-
-Point both wildcard DNS records at the server. Configure a wildcard-capable
-certificate resolver or install certificates covering both wildcards using
-your panel's TLS configuration. A DNS wildcard alone does not supply HTTPS.
-Test a newly created project's production and test host over HTTPS, including
-its mobile association files. This is the part that still needs verification
-on an actual Easypanel installation.
+Wildcard certificates need a DNS challenge. Until one is set up, project hosts
+work but Traefik serves its self-signed Easypanel certificate on them. Create a
+DNS challenge resolver following Easypanel's
+[wildcard domain guide](https://easypanel.io/docs/guides/wildcard-domain), then
+select it in the SSL tab of both wildcard domains on web. Test a newly created
+project's production and test host over HTTPS, including its mobile
+association files.
 
 ## Startup and operation
 
@@ -82,7 +88,13 @@ Keep every service at one replica and zero-downtime replacement disabled.
 Database services have persistent volumes and no public port mappings. For
 upgrades, stop workers, update both application images to the same release,
 restart web and wait for successful migrations, then restart workers/dashboard.
-Preserve all secrets and database volumes. Back up the databases, private bucket
-and configuration before an upgrade.
+Preserve all secrets and volumes. Back up the databases, the uploads volume or
+bucket, and the configuration before an upgrade.
+
+Deleting the project in Easypanel can leave its services, network, volumes and
+folder under `/etc/easypanel/projects` behind. A new project with the same name
+then fails with "network with name easypanel-<project> already exists". Remove
+the leftovers with `docker service rm`, `docker network rm` and
+`docker volume rm`, or use a different project name.
 
 Support: [Grovs Community issues](https://github.com/grovs-io/self-host/issues).

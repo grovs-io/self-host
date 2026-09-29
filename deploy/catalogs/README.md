@@ -9,7 +9,7 @@ the provider. No paid servers were created for this work.
 | DigitalOcean | [Packer image recipe](digitalocean/README.md), per-customer setup, image cleanup | Vendor account, build and test a clean snapshot, portal submission |
 | Vultr | [Packer image recipe](vultr/README.md), application variables, first boot, image cleanup | Vendor account and variables, build and test an image, portal submission |
 | Akamai / Linode | [StackScript and Ansible](akamai/README.md), SSH operator, firewall, credentials | Fresh Linode test, real screenshots, upstream review |
-| Easypanel | [Native template](easypanel/README.md), generated secrets, database volumes | Import into an Easypanel instance, verify wildcard TLS, capture a populated dashboard, upstream PR |
+| Easypanel | [Native template](easypanel/README.md), generated secrets, database volumes, shared upload volume, wildcard link domains, screenshot | Wildcard TLS through a DNS challenge on a real domain, upstream PR |
 | CapRover | [One Click App](caprover/README.md), generated secrets, database volumes | Deploy on a CapRover instance, verify wildcard TLS, upstream PR |
 | Dokploy | [Catalog blueprint](dokploy/README.md), Base64 import blob, generated secrets, database volumes | Deploy on a Dokploy instance, verify wildcard TLS, upstream PR |
 

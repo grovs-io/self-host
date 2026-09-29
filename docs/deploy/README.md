@@ -12,7 +12,7 @@ workers and the dashboard. No Ruby or Node.js build environment is needed.
 | Run the whole stack on your own Linux server | [Docker Compose](server.md) | A server, public IP and domain |
 | Manage it from an existing Coolify installation | [Coolify](coolify.md) | A connected server and Traefik with wildcard TLS |
 | Manage it from an existing Dokploy installation | [Dokploy](dokploy.md) | A connected server and Traefik with wildcard TLS |
-| Import into an Easypanel project | [Easypanel (preview)](easypanel.md) | Easypanel server, wildcard TLS and private object storage |
+| Import into an Easypanel project | [Easypanel (preview)](easypanel.md) | Easypanel server and wildcard TLS |
 | Use a CapRover One Click App template | [CapRover (preview)](caprover.md) | CapRover server, wildcard TLS and private object storage |
 | Create a server in your AWS account | [AWS](aws.md) | AWS billing, deployment permissions and a domain |
 | Create a server in your Google Cloud project | [Google Cloud](gcp.md) | Cloud billing, deployment permissions and a domain |
@@ -45,8 +45,9 @@ Community Edition does not require an enterprise license. SMTP is optional for
 initial login; configure it later for email-based password resets and notifications.
 
 Easypanel and CapRover currently use manual template imports, with live validation
-and official catalog listings pending. Both use private S3-compatible object
-storage for uploads shared by the API and workers.
+and official catalog listings pending. CapRover uses private S3-compatible object
+storage for uploads shared by the API and workers; Easypanel keeps them in a
+server volume unless you provide a bucket.
 
 ## First successful deployment
 

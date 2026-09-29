@@ -254,3 +254,90 @@ class DokployTemplateTest(unittest.TestCase):
                                     capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stderr.strip(), "")
+
+
+class BackendEnvStorageTest(unittest.TestCase):
+    """The shared bootstrap defaults to S3 and accepts local storage only when a target asks for it."""
+
+    def source(self, **extra):
+        env = {"PATH": os.environ["PATH"], "SERVER_HOST": "grovs.example.com",
+               "DOMAIN_LIVE": "links.example.com", "DOMAIN_TEST": "test.links.example.com",
+               "DATABASE_URL": "postgres://x", "REDIS_URL": "redis://x", "CLICKHOUSE_URL": "http://x", **extra}
+        script = f'. "{ROOT}/deploy/paas/backend-env.sh" && echo "$ACTIVE_STORAGE_SERVICE"'
+        return subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+
+    def test_s3_is_the_default_and_requires_credentials(self):
+        self.assertNotEqual(self.source().returncode, 0)
+        s3 = {"AWS_S3_KEY_ID": "k", "AWS_S3_ACCESS_KEY": "s", "AWS_S3_REGION": "r", "AWS_S3_BUCKET": "b"}
+        result = self.source(**s3)
+        self.assertEqual((result.returncode, result.stdout.strip()), (0, "amazon"), result.stderr)
+
+    def test_local_storage_needs_no_credentials(self):
+        result = self.source(ACTIVE_STORAGE_SERVICE="local")
+        self.assertEqual((result.returncode, result.stdout.strip()), (0, "local"), result.stderr)
+
+
+@unittest.skipUnless(shutil.which("node"), "Install Node.js to run the generated Easypanel template")
+class EasypanelTemplateTest(unittest.TestCase):
+    """Run the generated index.ts with type annotations stripped, as Easypanel's playground would."""
+
+    INPUT = {"servicePrefix": "grovs", "appDomain": "grovs.example.com", "linksDomain": "links.example.com",
+             "testDomain": "test.links.example.com", "adminEmail": "admin@example.com",
+             "s3Key": "", "s3Secret": "", "s3Region": "", "s3Bucket": "", "s3Endpoint": ""}
+
+    def generate(self, **overrides):
+        source = (CATALOGS / "easypanel/grovs/index.ts").read_text()
+        source = re.sub(r'^import .*$', "", source, flags=re.M)
+        source = source.replace("export function generate(input: Input): Output", "function generate(input: any): any")
+        source = source.replace("const services: Services = [];", "const services: any[] = [];")
+        source += f"\nconsole.log(JSON.stringify(generate({json.dumps({**self.INPUT, **overrides})})));\n"
+        with tempfile.TemporaryDirectory() as temp:
+            script = Path(temp) / "run.ts"
+            script.write_text(source)
+            result = subprocess.run(["node", "--experimental-strip-types", "--no-warnings", str(script)],
+                                    capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        services = json.loads(result.stdout)["services"]
+        return {s["data"]["serviceName"].removeprefix("grovs-"): s["data"] for s in services}
+
+    @staticmethod
+    def env(service):
+        return dict(line.split("=", 1) for line in service["env"].splitlines())
+
+    def test_uploads_default_to_a_volume_shared_by_web_and_workers(self):
+        services = self.generate()
+        # Easypanel backs the web volume with this folder and creates it; workers bind the same folder.
+        self.assertEqual(self.env(services["web"])["ACTIVE_STORAGE_SERVICE"], "local")
+        self.assertEqual(services["web"]["mounts"], [{"type": "volume", "name": "storage", "mountPath": "/app/storage"}])
+        shared = {"type": "bind", "hostPath": "/etc/easypanel/projects/$(PROJECT_NAME)/grovs-web/volumes/storage",
+                  "mountPath": "/app/storage"}
+        for role in ("worker-1", "worker-2"):
+            self.assertEqual(self.env(services[role])["ACTIVE_STORAGE_SERVICE"], "local")
+            self.assertEqual(services[role]["mounts"], [shared], role)
+
+    def test_internal_hosts_are_valid_url_hostnames(self):
+        # Easypanel's own service names contain an underscore, which Ruby rejects in connection URLs.
+        env = self.env(self.generate()["web"])
+        for key, role in (("POSTGRES_HOST", "postgres"), ("REDIS_HOST", "redis"),
+                          ("CLICKHOUSE_HOST", "clickhouse"), ("WEB_HOST", "web")):
+            self.assertEqual(env[key], "grovs-" + role, key)
+
+    def test_web_routes_project_links_through_wildcard_domains(self):
+        domains = self.generate()["web"]["domains"]
+        wildcards = [d for d in domains if d.get("wildcard")]
+        self.assertEqual(sorted(d["host"] for d in wildcards), ["links.example.com", "test.links.example.com"])
+        for domain in wildcards:
+            self.assertEqual((domain["port"], domain["https"]), (3000, True))
+
+    def test_a_bucket_switches_uploads_to_s3(self):
+        services = self.generate(s3Key="k", s3Secret="s", s3Region="eu-central-1", s3Bucket="uploads")
+        for role in ("web", "worker-1", "worker-2"):
+            env = self.env(services[role])
+            self.assertEqual(env["ACTIVE_STORAGE_SERVICE"], "amazon", role)
+            self.assertEqual(env["AWS_S3_BUCKET"], "uploads", role)
+
+    def test_bucket_fields_are_optional_in_the_form(self):
+        schema = json.loads((CATALOGS / "easypanel/grovs/meta.yaml").read_text())["schema"]
+        self.assertFalse({"s3Key", "s3Secret", "s3Region", "s3Bucket", "s3Endpoint"} & set(schema["required"]))
+        for field in ("appDomain", "linksDomain", "testDomain", "adminEmail"):
+            self.assertIn(field, schema["required"])

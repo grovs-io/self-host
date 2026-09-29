@@ -10,6 +10,7 @@ installation, TLS issuance or provider metadata delivery.
 | Easypanel template generation, TypeScript and Zod schema checks | Passed with the candidate copied into the upstream tree |
 | Dokploy upstream `generate-meta.js --check`, `validate-template.ts` and `validate-docker-compose.ts` | Passed with the blueprint copied into the upstream tree; `docker compose config` accepts the file with the template environment |
 | Dokploy live deployment, 16 to 21 September 2026 | Template created on a Dokploy instance with a remote Debian 13 server, both through Base64 import and from the Templates dialog: migrations and seed, dashboard login, all eight generated hosts, project links on wildcard hosts over HTTP and HTTPS. Not yet covered: wildcard HTTPS on a real domain, reboot, backup/restore |
+| Easypanel live deployment, 29 September 2026 | Imported on Easypanel with a Debian 13 server: migrations and seed, admin login, HTTPS on the fixed hosts, uploads shared between web and workers, project links through wildcard domains. Found and fixed: internal hostnames with underscores, shared storage mount. Not yet covered: wildcard certificates through a DNS challenge |
 | Easypanel playground production build | Passed using Node 22; upstream Next.js 12 fails with this workstation's Node 26 |
 | DigitalOcean Packer recipe | `packer init` and `packer validate` passed with a dummy token; no `build` run |
 | Vultr Packer recipe | `packer init` and `packer validate` passed with a dummy token; no `build` run |
@@ -30,7 +31,7 @@ Upstream revisions checked:
 - Build and launch DigitalOcean/Vultr marketplace images, confirm cleanup and
   unique instance identity, and complete vendor onboarding.
 - Execute the Ansible installer on Ubuntu in a new Linode.
-- Import and start the panel templates in actual Easypanel/CapRover instances.
+- Import and start the CapRover template in an actual CapRover instance.
 - Test the Dokploy template on a real domain with a DNS-01 resolver, then reboot and backup/restore.
 - Verify wildcard HTTPS, migrations against real databases, dashboard login,
   project links, event ingestion, uploads, reboot and backup/restore.
