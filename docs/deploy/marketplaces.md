@@ -55,13 +55,13 @@ Grovs Community gives mobile and web teams control of their deep links,
 attribution and analytics. Create branded links, direct users to the right app
 or website, and measure engagement from a dashboard running in your own cloud
 account. The deployment includes the Grovs backend and dashboard, PostgreSQL,
-Redis, ClickHouse and background workers. Published container images keep setup
-consistent, while persistent volumes store application data. Configure your
+Redis, ClickHouse and background workers. It runs from published container
+images and stores application data on persistent volumes. Configure your
 own domain, connect the SDKs and start tracking links without building the
 application from source. Community Edition requires no enterprise license;
 your cloud provider charges for infrastructure. Documentation covers installation,
 DNS, HTTPS, credentials, upgrades and backups. Self-hosted Enterprise plans are
-available for teams needing additional flexibility and performance.
+available for teams that need more flexibility and performance.
 
 **Suggested categories:** Analytics, Developer Tools, Marketing (select the closest
 categories offered by each catalog).
@@ -102,6 +102,6 @@ links available; don't promise a dofollow link or a ranking improvement.
 7. Submission ID/PR, reviewer feedback, accepted listing URL and the release tested.
 
 The Azure, cloud-init and [six catalog packages](../../deploy/catalogs/README.md)
-have local validation only. No billable cloud instances were created for this
-expansion. Image builds, live validation evidence and provider review remain
+have local validation only. No billable cloud instances were created to test
+them. Image builds, live validation evidence and provider review remain
 pending; no new official catalog listing is claimed.

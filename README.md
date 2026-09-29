@@ -1,7 +1,7 @@
-# Grovs — Self-Hosted
+# Grovs Self-Hosted
 
-Run your own [Grovs](https://grovs.io) instance — deep linking, attribution, and
-analytics — with Docker Compose. One directory brings up the backend, dashboard,
+Run your own [Grovs](https://grovs.io) instance (deep linking, attribution, and
+analytics) with Docker Compose. One directory brings up the backend, dashboard,
 PostgreSQL, Redis, ClickHouse, background workers, and a reverse proxy with
 automatic TLS, all from published images.
 
@@ -102,7 +102,7 @@ Already installed? Jump to [configuration](#after-install-changing-settings),
 | `clickhouse` | ClickHouse 25.3, the analytics and event store |
 | `migrate` | One-shot initialization: migrates PostgreSQL + ClickHouse, seeds the OAuth app + your admin |
 | `web` | Rails API (Puma) |
-| `worker-1` | Sidekiq: scheduler + events + batch — **singleton, never scale** |
+| `worker-1` | Sidekiq: scheduler + events + batch (**singleton, never scale**) |
 | `worker-2` | Sidekiq: maintenance + device updates |
 | `dashboard` | Next.js dashboard, configured at start from `.env` |
 
@@ -150,14 +150,14 @@ docker compose --profile standalone up -d       # drop the profile on platforms 
 ```
 
 Open `https://<DASHBOARD_HOST>` and log in with the admin email + password printed by
-setup. No SMTP or SSO required. Certificates are issued on the first request to each host.
+setup. You do not need SMTP or SSO. Certificates are issued on the first request to each host.
 
 ---
 
 
 ## Try it on your machine first
 
-No public domain or DNS setup needed. Select local mode explicitly:
+You do not need a public domain or DNS setup. Select local mode explicitly:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/main/install.sh | GROVS_DOMAIN=local bash
@@ -284,15 +284,15 @@ project's **API key** is what your SDKs use (next section).
 ## Environment variables
 
 Everything is configured through `.env` (copy from `.env.example`).
-`./scripts/setup.sh` generates all the secrets and the OAuth pair for you — you mainly
-fill in the **hostnames** and **two domains**. Here is what every variable does.
+`./scripts/setup.sh` generates all the secrets and the OAuth pair for you. You mainly
+fill in the **hostnames** and **two domains**. The tables below describe every variable.
 
 ### Hostnames & TLS
 | Variable | What it does |
 |----------|--------------|
 | `DASHBOARD_HOST` | Hostname of the dashboard UI (Next.js). |
 | `API_HOST` | Dashboard / REST API host. Also serves ActiveStorage blobs (proxy mode). |
-| `SDK_HOST` | **Mobile + server SDK host** — this exact value is the SDK `baseURL`. |
+| `SDK_HOST` | **Mobile + server SDK host**. This exact value is the SDK `baseURL`. |
 | `MCP_HOST` | MCP (Model Context Protocol) OAuth/API host. |
 | `GO_HOST` | Short-link helper host. |
 | `LINKS_PROD_HOST` | Production links host (under `DOMAIN_LIVE`). |
@@ -303,7 +303,7 @@ fill in the **hostnames** and **two domains**. Here is what every variable does.
 ### Self-hosted flags
 | Variable | What it does |
 |----------|--------------|
-| `GROVS_SELF_HOSTED` | Master switch — **must be `true`**. Disables Stripe/billing & public sign-ups, removes MAU quotas, turns member invites into copyable links (no SMTP needed), enables ActiveStorage proxy mode. |
+| `GROVS_SELF_HOSTED` | Master switch: **must be `true`**. Disables Stripe/billing & public sign-ups, removes MAU quotas, turns member invites into copyable links (no SMTP needed), enables ActiveStorage proxy mode. |
 | `GROVS_EE` | Enterprise edition (in-app-purchase / revenue features). Leave `false` unless licensed. |
 
 ### PostgreSQL
@@ -316,7 +316,7 @@ fill in the **hostnames** and **two domains**. Here is what every variable does.
 ### Redis
 | Variable | What it does |
 |----------|--------------|
-| `REDIS_URL` | Redis connection — event queues, caches, dedup, fingerprints. |
+| `REDIS_URL` | Redis connection: event queues, caches, dedup, fingerprints. |
 
 ### Process sizing (tune to host capacity)
 | Variable | What it does |
@@ -330,7 +330,7 @@ fill in the **hostnames** and **two domains**. Here is what every variable does.
 | Variable | What it does |
 |----------|--------------|
 | `ACTIVE_STORAGE_SERVICE` | `local` (default) keeps uploads in the `storage` volume; `amazon` uses S3 with the `AWS_S3_*` variables (`S3_ENDPOINT` + `S3_FORCE_PATH_STYLE=true` for S3-compatible stores). |
-| `S3_ASSET_PREFIX` | Public URL prefix for uploads — `https://<API_HOST>`; they are served through the backend. |
+| `S3_ASSET_PREFIX` | Public URL prefix for uploads: `https://<API_HOST>`; they are served through the backend. |
 
 ### ClickHouse
 | Variable | What it does |
@@ -344,9 +344,9 @@ fill in the **hostnames** and **two domains**. Here is what every variable does.
 |----------|--------------|
 | `RAILS_ENV` | `production`. |
 | `RAILS_LOG_TO_STDOUT` | `true` so Docker captures logs. |
-| `RAILS_SERVE_STATIC_FILES` | `true` — the backend serves its own compiled assets. |
+| `RAILS_SERVE_STATIC_FILES` | `true`: the backend serves its own compiled assets. |
 | `SECRET_KEY_BASE` | Rails session/signing secret. **Generate once, keep stable.** |
-| `ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY`, `_DETERMINISTIC_KEY`, `_KEY_DERIVATION_SALT` | At-rest encryption keys. **Generate once; never change after data exists** — rotating them makes encrypted columns unreadable. |
+| `ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY`, `_DETERMINISTIC_KEY`, `_KEY_DERIVATION_SALT` | At-rest encryption keys. **Generate once; never change after data exists.** Rotating them makes encrypted columns unreadable. |
 | `ADMIN_API_KEY` | Key guarding internal admin endpoints. |
 | `DIAGNOSTICS_API_KEY` | Key guarding diagnostics endpoints. |
 | `SENT_QUOTAS_WEBHOOK_KEY` | Key for the quota-reporting webhook. |
@@ -359,8 +359,8 @@ fill in the **hostnames** and **two domains**. Here is what every variable does.
 | Variable | What it does |
 |----------|--------------|
 | `SERVER_HOST_PROTOCOL` / `SERVER_HOST` | Protocol + the bare production domain (`example.com`); the `api.`/`sdk.`/`go.`/`preview.` hosts derive from it. Never the `api.` host itself: boot refuses it. |
-| `REACT_HOST_PROTOCOL` / `REACT_HOST` | Protocol + host for dashboard links (e.g. in emails) — your dashboard host. |
-| `DOMAIN_LIVE` | **Production base / registrable domain** (e.g. `example.com`) — **NOT a subdomain**. All reserved hosts and per-project prod link subdomains are children of it; routing only works when this is the registrable base. |
+| `REACT_HOST_PROTOCOL` / `REACT_HOST` | Protocol + host for dashboard links (e.g. in emails): your dashboard host. |
+| `DOMAIN_LIVE` | **Production base / registrable domain** (e.g. `example.com`), **NOT a subdomain**. All reserved hosts and per-project prod link subdomains are children of it; routing only works when this is the registrable base. |
 | `DOMAIN_TEST` | Base domain for test-environment links, `test.<DOMAIN_LIVE>` by default. A separate registrable domain also works. |
 | `PREVIEW_BASE_URL` | Full URL of the preview host. |
 | `MCP_CONSENT_URL` | OAuth consent URL for MCP. |
@@ -406,14 +406,14 @@ import Grovs
 Grovs.configure(
     APIKey: "YOUR_PROJECT_API_KEY",
     useTestEnvironment: false,
-    baseURL: "https://sdk.example.com",   // your SDK_HOST — SDK appends the API path
+    baseURL: "https://sdk.example.com",   // your SDK_HOST; SDK appends the API path
     delegate: self
 )
 ```
 
 **Android** ([grovs-io/grovs-android](https://github.com/grovs-io/grovs-android))
 
-The Android SDK takes the same self-hosted base URL — set it to `https://<SDK_HOST>`
+The Android SDK takes the same self-hosted base URL. Set it to `https://<SDK_HOST>`
 in the `Grovs.configure(...)` call (see the repo README for the exact signature):
 
 ```kotlin
@@ -428,7 +428,7 @@ Grovs.configure(
 Server-to-server callers use the same host with the `PROJECT-KEY` + `ENVIRONMENT`
 headers against `https://<SDK_HOST>`.
 
-> **Always pass `baseURL` in _every_ `configure(...)` call — including release/production
+> **Always pass `baseURL` in _every_ `configure(...)` call, including release/production
 > builds.** If you omit it (common in a `#else` / release branch), the SDK falls back to
 > the hosted Grovs cloud (`sqd.link`) and your self-hosted links won't resolve. Also match
 > `useTestEnvironment` to the API key's environment: **test key → `true`**, **production
@@ -437,7 +437,7 @@ headers against `https://<SDK_HOST>`.
 
 > **Universal Links / App Links need the matching domains in the app, too.** Add
 > `applinks:*.<DOMAIN_LIVE>` **and** `applinks:*.<DOMAIN_TEST>` to the iOS app's Associated
-> Domains (and the Android `assetlinks` equivalent), then reinstall — iOS caches the
+> Domains (and the Android `assetlinks` equivalent), then reinstall, since iOS caches the
 > association at install time.
 
 ---
@@ -448,7 +448,7 @@ Link landing pages and social/link previews pull images from two places: **per-p
 per-link images you set in the dashboard**, and **fallback defaults** for when a link has
 none. Set both up so links never render blank.
 
-### Default images (env) — so nothing is ever empty
+### Default images (env), so nothing is ever empty
 
 If a project has no app-store icon and a link has no custom preview image, Grovs falls
 back to these. They ship pointing at the Grovs assets; **set your own URLs to rebrand:**
@@ -461,10 +461,10 @@ back to these. They ship pointing at the Grovs assets; **set your own URLs to re
 | `DEFAULT_LINK_SUBTITLE` | Default `og:description` for link previews. |
 
 > ⚠️ **Leave these empty and link pages show a blank icon and social shares render an
-> empty card** (no image, no title) — point them at publicly reachable image URLs. A
+> empty card** (no image, no title). Point them at publicly reachable image URLs. A
 > **1200×630** JPG/PNG works well for the social preview.
 
-### Uploaded images (dashboard) — must be reachable
+### Uploaded images (dashboard) must be reachable
 
 App icons and per-link preview images you upload in the dashboard are stored in object
 storage (the `storage` volume or S3) and served back through the **API host** in proxy mode. For them to
@@ -479,7 +479,7 @@ appear on link pages and in social previews:
 
 Facebook, LinkedIn, iMessage, WhatsApp, etc. **cache** OG data aggressively. If a link
 you already shared still looks blank after you fix the image, **re-scrape** it (e.g.
-Facebook's Sharing Debugger) or test with a **fresh** link — the cache won't refresh on
+Facebook's Sharing Debugger) or test with a **fresh** link, because the cache won't refresh on
 its own for a while.
 
 ---
@@ -523,7 +523,7 @@ Keep an encrypted, off-server copy of `.env` (or the platform's environment).
 It contains credentials and encryption keys needed to restore the installation.
 
 Durable state lives in named volumes:
-- **`pg_data`** — the system of record: projects, links, users, purchases. Back it up (`pg_dump` off-box or volume snapshots).
-- **`clickhouse_data`** — events and analytics. Snapshot the volume or use `clickhouse-backup`.
-- **`storage`** — uploaded images and exports.
-- **`redis_data`** — AOF; only undrained events are at risk.
+- **`pg_data`**: the system of record: projects, links, users, purchases. Back it up (`pg_dump` off-box or volume snapshots).
+- **`clickhouse_data`**: events and analytics. Snapshot the volume or use `clickhouse-backup`.
+- **`storage`**: uploaded images and exports.
+- **`redis_data`**: AOF; only undrained events are at risk.

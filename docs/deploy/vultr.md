@@ -2,9 +2,9 @@
 
 [Open Vultr Console](https://my.vultr.com/deploy/)
 
-This guide covers installing **Grovs Community Edition** on a regular Vultr
-instance. Community Edition requires no Enterprise license; Enterprise features
-require a separate license from grovs.io.
+These steps install Grovs Community Edition on a regular Vultr instance.
+Community Edition requires no Enterprise license; Enterprise features require a
+separate license from grovs.io.
 
 The Vultr Marketplace vendor application is under review. An
 [automatic first-boot package](../../deploy/catalogs/vultr/README.md) is prepared,

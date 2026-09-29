@@ -4,7 +4,7 @@ The [CloudFormation template](../../deploy/aws/cloudformation.yaml) creates a
 dedicated VPC, public subnet, security group, static IPv4 address and one Ubuntu
 24.04 EC2 instance. Grovs runs on that instance using Docker Compose. PostgreSQL,
 Redis, ClickHouse and uploads use persistent Docker volumes on its encrypted EBS
-disk. This is a single-server deployment, not an HA cluster.
+disk. This is a single-server deployment without high availability.
 
 **You pay AWS for the instance, EBS storage and public IPv4.** The default is a
 `t3.xlarge` with 100 GiB of gp3 storage. Review regional pricing before creating it.
@@ -16,7 +16,7 @@ disk. This is a single-server deployment, not an HA cluster.
    region. Select **Upload a template file** and upload it.
 3. Fill in `AppDomain`, `AdminEmail` and a published `GrovsVersion`.
 4. Keep `StackRef=main` or pin a reviewed commit containing the deployment files.
-   The historical `2.3.0` self-host tag does not contain these new cloud scripts.
+   The historical `2.3.0` self-host tag does not contain these cloud scripts.
 5. Review the resources and acknowledge IAM creation. The instance role grants
    Session Manager connectivity; no SSH port is open publicly.
 6. Create the stack. Copy `IpAddress` and `InstanceId` from Outputs.

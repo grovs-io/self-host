@@ -11,8 +11,8 @@ databases and uploads, and the bundled Caddy proxy handles HTTPS.
 - Ports 80 and 443 available for Grovs. If Coolify or Dokploy already owns those
   ports, follow its [platform guide](README.md) instead.
 
-The sizing above is a starting point, not a traffic guarantee. Workload, event
-volume and retention determine the capacity you need.
+The sizing above is a starting point and does not guarantee any traffic level.
+Workload, event volume and retention determine the capacity you need.
 
 ## 1. Download and configure
 

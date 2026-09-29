@@ -2,7 +2,7 @@
 
 Run the Community Edition in your own account, using the published backend and
 dashboard images. The stack includes PostgreSQL, Redis, ClickHouse, background
-workers and the dashboard. No Ruby or Node.js build environment is needed.
+workers and the dashboard. You do not need a Ruby or Node.js build environment.
 
 ## Choose where to run it
 
@@ -25,7 +25,7 @@ workers and the dashboard. No Ruby or Node.js build environment is needed.
 | Run services in a Railway project | [Deploy on Railway](https://railway.com/deploy/grovs-community) · [Guide](railway.md) | Railway account, billing, domains and object storage |
 | Run services on Render | [Render Blueprint](render.md) | Render account, billing, domain and object storage |
 
-**For the shortest server setup, choose Docker Compose.** Coolify and Dokploy
+For the shortest server setup, choose Docker Compose. Coolify and Dokploy
 reuse your platform's proxy. The AWS and Google Cloud options create one VM and
 run the standalone Compose stack on it. Cloud Shell is the deployment terminal;
 it is not where Grovs runs.
@@ -44,8 +44,8 @@ Your server and storage are paid for through your infrastructure provider. The
 Community Edition does not require an enterprise license. SMTP is optional for
 initial login; configure it later for email-based password resets and notifications.
 
-Easypanel and CapRover currently use manual template imports, with live validation
-and official catalog listings pending. CapRover uses private S3-compatible object
+Easypanel and CapRover use manual template imports. Live validation and official
+catalog listings are pending. CapRover uses private S3-compatible object
 storage for uploads shared by the API and workers; Easypanel keeps them in a
 server volume unless you provide a bucket.
 

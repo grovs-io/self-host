@@ -8,7 +8,7 @@ or deployed on Vultr yet; the package has local checks only.
 ## Listing scope and review status
 
 The Vultr vendor application is under review. The proposed listing deploys
-**Grovs Community Edition**, free to use without an Enterprise license;
+Grovs Community Edition, free to use without an Enterprise license;
 customers pay Vultr for infrastructure. Enterprise features require a separate
 license from grovs.io and are not included in the Community deployment.
 

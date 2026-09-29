@@ -1,4 +1,4 @@
-# Local validation record — 15 September 2026
+# Local validation record, 15 September 2026
 
 No paid cloud resources were created. These checks do not test a deployed Grovs
 installation, TLS issuance or provider metadata delivery.

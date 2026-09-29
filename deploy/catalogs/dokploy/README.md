@@ -44,10 +44,10 @@ placeholder host on `sslip.io` over HTTP. Dokploy creates the fixed hosts for
 you: `dashboard`, `api`, `sdk`, `mcp`, `go`, `preview`, `links` and
 `links.test`, all under the placeholder domain and pointing at container port
 3000. Per-project link hosts such as `<project>.<placeholder>` are routed by
-wildcard Traefik rules carried in the Compose file, so no manual domain entry
-is needed. Grovs always prints project links with `https://`; on the
+wildcard Traefik rules carried in the Compose file, so you do not add them
+as domains. Grovs always prints project links with `https://`; on the
 placeholder there is no certificate, so open them with `http://` instead.
-Uploads use the `storage` volume; no object storage is required.
+Uploads use the `storage` volume, so object storage is not required.
 
 Sign in at the dashboard host with `BOOTSTRAP_ADMIN_EMAIL` and
 `BOOTSTRAP_ADMIN_PASSWORD` from the service's **Environment** tab. Save the

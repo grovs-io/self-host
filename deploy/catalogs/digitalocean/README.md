@@ -10,7 +10,7 @@ DigitalOcean listing or tested snapshot yet.
 1. Complete [DigitalOcean vendor onboarding](https://marketplace.digitalocean.com/vendors).
 2. Review `grovs.pkr.hcl`, the shared image preparation scripts and the pinned
    [DigitalOcean cleanup/check scripts](https://github.com/digitalocean/marketplace-partners).
-3. Run these **local checks** from this directory with Packer installed:
+3. Run these local checks from this directory with Packer installed:
 
    ```bash
    packer init grovs.pkr.hcl

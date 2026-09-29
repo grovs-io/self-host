@@ -39,7 +39,7 @@ When cloud testing is authorized, deploy a new Linode using the StackScript and
 the inputs documented below. Verify SSH access as the new user, firewall rules,
 unique credentials, all [application checks](../README.md) and reboot persistence.
 Capture login and populated-dashboard screenshots using demo data. Include the
-100–125 word description and support links from the
+100 to 125 word description and support links from the
 [listing copy](../../../docs/deploy/marketplaces.md#reusable-listing-copy), SVG
 artwork and the completed customer documentation in the submission.
 
