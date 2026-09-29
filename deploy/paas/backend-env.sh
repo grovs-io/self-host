@@ -5,11 +5,13 @@ set -eu
 : "${SERVER_HOST:?Set your app domain}"
 : "${DOMAIN_LIVE:?Set your production links domain}"
 : "${DOMAIN_TEST:?Set your test links domain}"
-: "${AWS_S3_KEY_ID:?Set object storage credentials}"
-: "${AWS_S3_ACCESS_KEY:?Set object storage credentials}"
-: "${AWS_S3_REGION:?Set your bucket region}"
-: "${AWS_S3_BUCKET:?Set your bucket name}"
-export ACTIVE_STORAGE_SERVICE=amazon
+export ACTIVE_STORAGE_SERVICE="${ACTIVE_STORAGE_SERVICE:-amazon}"
+if [ "$ACTIVE_STORAGE_SERVICE" = amazon ]; then
+  : "${AWS_S3_KEY_ID:?Set object storage credentials}"
+  : "${AWS_S3_ACCESS_KEY:?Set object storage credentials}"
+  : "${AWS_S3_REGION:?Set your bucket region}"
+  : "${AWS_S3_BUCKET:?Set your bucket name}"
+fi
 export SERVER_HOST_PROTOCOL=https:// REACT_HOST_PROTOCOL=https://
 export REACT_HOST="dashboard.$SERVER_HOST"
 export API_HOST="api.$SERVER_HOST" SDK_HOST="sdk.$SERVER_HOST"
