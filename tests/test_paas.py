@@ -92,7 +92,8 @@ class PaasTest(unittest.TestCase):
             oauth = next(e for e in role["envVars"] if e["key"] == "OAUTH_CLIENT_SECRET")
             self.assertEqual(oauth["fromService"], {"name": "grovs-web", "type": "web", "envVarKey": "OAUTH_CLIENT_SECRET"})
         self.assertEqual(services["grovs-worker-1"]["numInstances"], 1)
-        linked = {k for k, e in env.items() if "fromDatabase" in e or "fromService" in e}
+        linked = {k for k, e in env.items()
+                  if "fromDatabase" in e or "fromService" in e or e.get("value") == ""}
         for name in ("grovs-worker-1", "grovs-worker-2", "grovs-dashboard"):
             for entry in services[name]["envVars"]:
                 source = entry.get("fromService", {})

@@ -541,11 +541,7 @@
         },
         {
           "key": "MAILER_DELIVERY_METHOD",
-          "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "MAILER_DELIVERY_METHOD"
-          }
+          "value": ""
         },
         {
           "key": "SMTP_ADDRESS",
@@ -565,19 +561,11 @@
         },
         {
           "key": "SMTP_USERNAME",
-          "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "SMTP_USERNAME"
-          }
+          "value": ""
         },
         {
           "key": "SMTP_PASSWORD",
-          "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "SMTP_PASSWORD"
-          }
+          "value": ""
         },
         {
           "key": "SMTP_AUTHENTICATION",
@@ -1015,11 +1003,7 @@
         },
         {
           "key": "MAILER_DELIVERY_METHOD",
-          "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "MAILER_DELIVERY_METHOD"
-          }
+          "value": ""
         },
         {
           "key": "SMTP_ADDRESS",
@@ -1039,19 +1023,11 @@
         },
         {
           "key": "SMTP_USERNAME",
-          "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "SMTP_USERNAME"
-          }
+          "value": ""
         },
         {
           "key": "SMTP_PASSWORD",
-          "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "SMTP_PASSWORD"
-          }
+          "value": ""
         },
         {
           "key": "SMTP_AUTHENTICATION",
