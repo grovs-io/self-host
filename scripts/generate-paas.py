@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate Render Blueprint and shared PaaS commands from the checked-in defaults."""
 import argparse
+import base64
 import json
 from pathlib import Path
 import shlex
@@ -37,6 +38,13 @@ def commands():
         body += "wait -n\n"
         result[role] = command(body)
     return result
+
+
+def dollar_free(command):
+    """Render substitutes $NAME in commands, so ship the script base64-encoded."""
+    script = shlex.split(command)[2]
+    encoded = base64.b64encode(script.encode()).decode()
+    return f"bash -c 'echo {encoded} | base64 -d > /tmp/grovs.sh && exec bash -e /tmp/grovs.sh'"
 
 
 def render_blueprint(config, cmds):
@@ -89,9 +97,9 @@ def render_blueprint(config, cmds):
         item = {"name": "grovs-" + role, "type": "web" if role == "web" else "worker",
                 "runtime": "image", "image": {"url": backend_image}, "plan": "1c-2g",
                 "region": "frankfurt", "numInstances": 1, "autoDeployTrigger": "off",
-                "dockerCommand": cmds[role], "envVars": role_env}
+                "dockerCommand": dollar_free(cmds[role]), "envVars": role_env}
         if role == "web":
-            item.update(healthCheckPath="/up", preDeployCommand=cmds["migrate"])
+            item.update(healthCheckPath="/up", preDeployCommand=dollar_free(cmds["migrate"]))
         services.append(item)
     services.append({"name": "grovs-dashboard", "type": "web", "runtime": "image",
                      "image": {"url": "ghcr.io/grovs-io/dashboard:" + config["GROVS_VERSION"]},
