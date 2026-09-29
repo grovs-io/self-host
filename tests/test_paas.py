@@ -88,6 +88,15 @@ class PaasTest(unittest.TestCase):
             oauth = next(e for e in role["envVars"] if e["key"] == "OAUTH_CLIENT_SECRET")
             self.assertEqual(oauth["fromService"], {"name": "grovs-web", "type": "web", "envVarKey": "OAUTH_CLIENT_SECRET"})
         self.assertEqual(services["grovs-worker-1"]["numInstances"], 1)
+        linked = {k for k, e in env.items() if "fromDatabase" in e or "fromService" in e}
+        for name in ("grovs-worker-1", "grovs-worker-2", "grovs-dashboard"):
+            for entry in services[name]["envVars"]:
+                source = entry.get("fromService", {})
+                if source.get("name") == "grovs-web":
+                    self.assertNotIn(source.get("envVarKey"), linked, name)
+        worker = {e["key"]: e for e in services["grovs-worker-1"]["envVars"]}
+        self.assertEqual(worker["DATABASE_URL"], env["DATABASE_URL"])
+        self.assertEqual(worker["CLICKHOUSE_PASSWORD"], env["CLICKHOUSE_PASSWORD"])
 
     def test_embedded_commands_parse(self):
         for command in json.loads((ROOT / "deploy/paas/commands.json").read_text()).values():

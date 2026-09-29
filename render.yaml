@@ -725,33 +725,32 @@
         },
         {
           "key": "DATABASE_URL",
-          "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "DATABASE_URL"
+          "fromDatabase": {
+            "name": "grovs-postgres",
+            "property": "connectionString"
           }
         },
         {
           "key": "REDIS_URL",
           "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "REDIS_URL"
+            "name": "grovs-redis",
+            "type": "keyvalue",
+            "property": "connectionString"
           }
         },
         {
           "key": "CLICKHOUSE_HOST",
           "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "CLICKHOUSE_HOST"
+            "name": "grovs-clickhouse",
+            "type": "pserv",
+            "property": "host"
           }
         },
         {
           "key": "CLICKHOUSE_PASSWORD",
           "fromService": {
-            "name": "grovs-web",
-            "type": "web",
+            "name": "grovs-clickhouse",
+            "type": "pserv",
             "envVarKey": "CLICKHOUSE_PASSWORD"
           }
         },
@@ -1200,33 +1199,32 @@
         },
         {
           "key": "DATABASE_URL",
-          "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "DATABASE_URL"
+          "fromDatabase": {
+            "name": "grovs-postgres",
+            "property": "connectionString"
           }
         },
         {
           "key": "REDIS_URL",
           "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "REDIS_URL"
+            "name": "grovs-redis",
+            "type": "keyvalue",
+            "property": "connectionString"
           }
         },
         {
           "key": "CLICKHOUSE_HOST",
           "fromService": {
-            "name": "grovs-web",
-            "type": "web",
-            "envVarKey": "CLICKHOUSE_HOST"
+            "name": "grovs-clickhouse",
+            "type": "pserv",
+            "property": "host"
           }
         },
         {
           "key": "CLICKHOUSE_PASSWORD",
           "fromService": {
-            "name": "grovs-web",
-            "type": "web",
+            "name": "grovs-clickhouse",
+            "type": "pserv",
             "envVarKey": "CLICKHOUSE_PASSWORD"
           }
         },

@@ -78,7 +78,10 @@ def render_blueprint(config, cmds):
                 {"name": "grovs-redis", "type": "keyvalue", "plan": "1g", "region": "frankfurt",
                  "ipAllowList": [], "maxmemoryPolicy": "noeviction"}]
     for role in ("web", "worker-1", "worker-2"):
-        role_env = env if role == "web" else [ref(entry["key"]) for entry in env]
+        # Render cannot chain references, so workers link datastores directly.
+        role_env = env if role == "web" else [
+            entry if "fromDatabase" in entry or "fromService" in entry else ref(entry["key"])
+            for entry in env]
         if role != "web":
             role_env = role_env + [ref("WEB_HOST", prop="host"), value("WEB_PORT", "3000")]
         item = {"name": "grovs-" + role, "type": "web" if role == "web" else "worker",
