@@ -16,7 +16,7 @@ ranking benefits are controlled by the provider.
 | 1 | CapRover | [One Click Apps](https://github.com/caprover/one-click-apps) | [Template, logo and upstream validation](../../deploy/catalogs/caprover/README.md) | Live deployment, wildcard HTTPS verification and upstream PR |
 | 1 | Coolify | [Service contribution workflow](https://coolify.io/docs/services) | Compose import and routing guide | Native catalog metadata, generated fields, live test and upstream submission |
 | Submitted | Dokploy | [Templates PR 1174](https://github.com/Dokploy/templates/pull/1174) | [Catalog blueprint, import blob and live test on a Dokploy instance](../../deploy/catalogs/dokploy/README.md) | Maintainer review and merge; wildcard HTTPS check on a real domain |
-| 2 | Microsoft / Azure | [Azure Application offer](https://learn.microsoft.com/en-us/partner-center/marketplace-offers/plan-azure-application-offer) | ARM template and Deploy to Azure button | Partner Center publisher account, solution-template offer, portal UI definition/package, live test and certification |
+| 2 | Microsoft / Azure | [Azure Application offer](https://learn.microsoft.com/en-us/partner-center/marketplace-offers/plan-azure-application-offer) | ARM template and Deploy to Azure button, deployed end to end on a free trial subscription | Partner Center publisher account, solution-template offer, portal UI definition/package and certification |
 | Not a fit | Scaleway | [Marketplace partner application](https://www.scaleway.com/en/marketplace/become-partner/) | Instance guide with a paste-in startup block | The marketplace lists Scaleway-built images and commercial partners; a hosted Grovs SaaS listing is the realistic option, not the self-hosted edition |
 | 2 | AWS | [AWS Marketplace seller guide](https://docs.aws.amazon.com/marketplace/latest/userguide/user-guide-for-sellers.html) | CloudFormation template | Seller onboarding, choose a supported offer format, build/test an image or container product, submit for review |
 | 2 | Google Cloud | [Marketplace partners](https://cloud.google.com/marketplace/docs/partners) | Cloud Shell VM deployment | Partner onboarding, supported product package, technical review and publication |
@@ -101,7 +101,8 @@ links available; don't promise a dofollow link or a ranking improvement.
    **Never snapshot an initialized `/opt/grovs/.env` or populated Docker volumes.**
 7. Submission ID/PR, reviewer feedback, accepted listing URL and the release tested.
 
-The Azure, cloud-init and [six catalog packages](../../deploy/catalogs/README.md)
-have local validation only. No billable cloud instances were created to test
+The Azure template was deployed end to end on a live subscription. The
+cloud-init and [six catalog packages](../../deploy/catalogs/README.md) have
+local validation only. No billable cloud instances were created to test
 them. Image builds, live validation evidence and provider review remain
 pending; no new official catalog listing is claimed.

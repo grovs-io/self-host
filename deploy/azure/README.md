@@ -14,6 +14,6 @@ az bicep build --file deploy/azure/main.bicep --outfile deploy/azure/azuredeploy
 python3 -m unittest discover -s tests
 ```
 
-Compilation and local tests do not validate subscription quotas, regional VM
-availability or a live first boot. Marketplace packaging and live verification
-are tracked in [the submission plan](../../docs/deploy/marketplaces.md).
+Compilation and local tests do not validate subscription quotas or regional VM
+availability. The template has been deployed end to end on a live subscription;
+Marketplace packaging is tracked in [the submission plan](../../docs/deploy/marketplaces.md).
