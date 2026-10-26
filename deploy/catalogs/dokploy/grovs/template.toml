@@ -11,6 +11,7 @@ diagnostics_api_key = "${hash:64}"
 sent_quotas_webhook_key = "${hash:64}"
 oauth_client_uid = "${hash:48}"
 oauth_client_secret = "${hash:64}"
+trusted_proxy_secret = "${hash:64}"
 bootstrap_admin_password = "${password:24}"
 
 [config]
@@ -32,6 +33,7 @@ env = [
   "SENT_QUOTAS_WEBHOOK_KEY=${sent_quotas_webhook_key}",
   "OAUTH_CLIENT_UID=${oauth_client_uid}",
   "OAUTH_CLIENT_SECRET=${oauth_client_secret}",
+  "TRUSTED_PROXY_SECRET=${trusted_proxy_secret}",
   "BOOTSTRAP_ADMIN_PASSWORD=${bootstrap_admin_password}",
 ]
 

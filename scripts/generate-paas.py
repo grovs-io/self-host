@@ -35,6 +35,10 @@ def commands():
         body += "pids=()\ntrap 'kill \"${pids[@]}\" 2>/dev/null || true' EXIT\ntrap 'exit 143' TERM INT\n"
         for queue in queues:
             body += f"bundle exec sidekiq -C config/sidekiq_{queue}.yml &\npids+=($!)\n"
+        if role == "worker-2":
+            # Enterprise image only: push, in-app, journey and event-stream queues, and the push daemon.
+            body += ("if [ -d ee/app ]; then\nbundle exec sidekiq -C config/sidekiq_egress.yml &\npids+=($!)\n"
+                     "GROVS_ROLE=rpush bin/rpush-cluster &\npids+=($!)\nfi\n")
         body += "wait -n\n"
         result[role] = command(body)
     return result

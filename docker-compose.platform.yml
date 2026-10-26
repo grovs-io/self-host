@@ -50,6 +50,7 @@ x-backend: &backend
     PUBLIC_GO_PROJECT_IDENTIFIER: "${PUBLIC_GO_PROJECT_IDENTIFIER:-}"
     OAUTH_CLIENT_UID: "${OAUTH_CLIENT_UID:?Run scripts/setup.sh and import the generated environment}"
     OAUTH_CLIENT_SECRET: "${OAUTH_CLIENT_SECRET:?Run scripts/setup.sh and import the generated environment}"
+    TRUSTED_PROXY_SECRET: "${TRUSTED_PROXY_SECRET:?Run scripts/setup.sh and import the generated environment}"
     BOOTSTRAP_ADMIN_EMAIL: "${BOOTSTRAP_ADMIN_EMAIL:-}"
     BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:?Run scripts/setup.sh and import the generated environment}"
     DEFAULT_LOGO_URL: "${DEFAULT_LOGO_URL:-}"
@@ -212,6 +213,8 @@ services:
       - |
         bundle exec sidekiq -C config/sidekiq_maintenance.yml &
         bundle exec sidekiq -C config/sidekiq_device_updates.yml &
+        # Enterprise image only: push, in-app, journey and event-stream queues, and the push daemon.
+        if [ -d ee/app ]; then bundle exec sidekiq -C config/sidekiq_egress.yml & GROVS_ROLE=rpush bin/rpush-cluster & fi
         wait -n
     depends_on:
       web:
@@ -241,6 +244,7 @@ services:
       API_URL: ${SERVER_HOST_PROTOCOL:-https://}${API_HOST}
       OAUTH_CLIENT_UID: ${OAUTH_CLIENT_UID}
       OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET}
+      TRUSTED_PROXY_SECRET: ${TRUSTED_PROXY_SECRET:-}
     depends_on:
       web:
         condition: service_healthy

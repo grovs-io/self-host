@@ -246,7 +246,8 @@ def dokploy():
                    healthcheck={'test': ['CMD', 'curl', '-f', 'http://localhost:3000/up'], 'interval': '10s',
                                 'timeout': '5s', 'retries': 30, 'start_period': '60s'}),
         'worker-1': app(sidekiq('scheduler', 'worker', 'batch'), depends_on=healthy('web')),
-        'worker-2': app(sidekiq('maintenance', 'device_updates'), depends_on=healthy('web')),
+        'worker-2': app(['bash', '-c', 'bundle exec sidekiq -C config/sidekiq_maintenance.yml & bundle exec sidekiq -C config/sidekiq_device_updates.yml & '
+                         'if [ -d ee/app ]; then bundle exec sidekiq -C config/sidekiq_egress.yml & GROVS_ROLE=rpush bin/rpush-cluster & fi; wait -n'], depends_on=healthy('web')),
         'dashboard': {'image': IMAGES['dashboard'], 'restart': 'unless-stopped', 'expose': [3000],
                       'environment': {'API_URL': '${SERVER_HOST_PROTOCOL}' + host('api'),
                                       'OAUTH_CLIENT_UID': '${OAUTH_CLIENT_UID}',

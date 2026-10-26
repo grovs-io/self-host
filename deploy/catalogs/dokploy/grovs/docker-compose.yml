@@ -135,6 +135,7 @@ services:
       SMTP_PASSWORD: ""
       SMTP_PORT: "587"
       SMTP_USERNAME: ""
+      TRUSTED_PROXY_SECRET: "${TRUSTED_PROXY_SECRET}"
       WEB_CONCURRENCY: "2"
     volumes:
       - "storage:/app/storage"
@@ -223,6 +224,7 @@ services:
       SMTP_PASSWORD: ""
       SMTP_PORT: "587"
       SMTP_USERNAME: ""
+      TRUSTED_PROXY_SECRET: "${TRUSTED_PROXY_SECRET}"
       WEB_CONCURRENCY: "2"
     volumes:
       - "storage:/app/storage"
@@ -337,6 +339,7 @@ services:
       SMTP_PASSWORD: ""
       SMTP_PORT: "587"
       SMTP_USERNAME: ""
+      TRUSTED_PROXY_SECRET: "${TRUSTED_PROXY_SECRET}"
       WEB_CONCURRENCY: "2"
     volumes:
       - "storage:/app/storage"
@@ -421,13 +424,14 @@ services:
       SMTP_PASSWORD: ""
       SMTP_PORT: "587"
       SMTP_USERNAME: ""
+      TRUSTED_PROXY_SECRET: "${TRUSTED_PROXY_SECRET}"
       WEB_CONCURRENCY: "2"
     volumes:
       - "storage:/app/storage"
     command:
       - "bash"
       - "-c"
-      - "bundle exec sidekiq -C config/sidekiq_maintenance.yml & bundle exec sidekiq -C config/sidekiq_device_updates.yml & wait -n"
+      - "bundle exec sidekiq -C config/sidekiq_maintenance.yml & bundle exec sidekiq -C config/sidekiq_device_updates.yml & if [ -d ee/app ]; then bundle exec sidekiq -C config/sidekiq_egress.yml & GROVS_ROLE=rpush bin/rpush-cluster & fi; wait -n"
     depends_on:
       web:
         condition: "service_healthy"
