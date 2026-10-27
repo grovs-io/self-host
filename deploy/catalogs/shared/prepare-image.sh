@@ -16,10 +16,10 @@ install -d -m 0755 /usr/local/lib/grovs
 install -m 0755 /opt/grovs-catalog-input/grovs-setup.sh /usr/local/bin/grovs-setup
 install -m 0644 /opt/grovs-catalog-input/bootstrap.sh /usr/local/lib/grovs/bootstrap.sh
 git clone --quiet https://github.com/grovs-io/self-host.git /opt/grovs
-git -C /opt/grovs checkout --quiet --detach d9f291fb7a943adc8b712696342180ea63438cfd
+git -C /opt/grovs checkout --quiet --detach 579ef87ce3662471b14e079b194d26d8f6df529e
 chmod 700 /opt/grovs
 # Pull public images only; never run setup.sh or start a container on the build VM.
-for image in ghcr.io/grovs-io/backend:2.3.1 ghcr.io/grovs-io/dashboard:2.3.1 postgres:16-alpine redis:7-alpine clickhouse/clickhouse-server:25.3 caddy:2; do
+for image in ghcr.io/grovs-io/backend:3.0.0 ghcr.io/grovs-io/dashboard:3.0.0 postgres:16-alpine redis:7-alpine clickhouse/clickhouse-server:25.3 caddy:2; do
   docker pull "$image"
 done
 ufw allow 22/tcp

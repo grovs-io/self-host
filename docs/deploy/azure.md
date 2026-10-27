@@ -26,7 +26,7 @@ and a reboot.
 6. Open the deployment's **Outputs** for the IP address and SSH command.
 
 [Review the template](https://github.com/grovs-io/self-host/tree/main/deploy/azure)
-before deploying. The form defaults to published release `2.3.1` and a pinned
+before deploying. The form defaults to published release `3.0.0` and a pinned
 Compose source commit. VM creation can finish before application setup does.
 
 ## Choosing a region

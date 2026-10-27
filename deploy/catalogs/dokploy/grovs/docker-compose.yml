@@ -62,7 +62,7 @@ services:
       timeout: "5s"
       retries: 30
   migrate:
-    image: "ghcr.io/grovs-io/backend:2.3.1"
+    image: "ghcr.io/grovs-io/backend:3.0.0"
     restart: "no"
     environment:
       ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: "${ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}"
@@ -151,7 +151,7 @@ services:
       clickhouse:
         condition: "service_healthy"
   web:
-    image: "ghcr.io/grovs-io/backend:2.3.1"
+    image: "ghcr.io/grovs-io/backend:3.0.0"
     restart: "unless-stopped"
     environment:
       ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: "${ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}"
@@ -266,7 +266,7 @@ services:
       retries: 30
       start_period: "60s"
   worker-1:
-    image: "ghcr.io/grovs-io/backend:2.3.1"
+    image: "ghcr.io/grovs-io/backend:3.0.0"
     restart: "unless-stopped"
     environment:
       ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: "${ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}"
@@ -351,7 +351,7 @@ services:
       web:
         condition: "service_healthy"
   worker-2:
-    image: "ghcr.io/grovs-io/backend:2.3.1"
+    image: "ghcr.io/grovs-io/backend:3.0.0"
     restart: "unless-stopped"
     environment:
       ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: "${ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}"
@@ -436,7 +436,7 @@ services:
       web:
         condition: "service_healthy"
   dashboard:
-    image: "ghcr.io/grovs-io/dashboard:2.3.1"
+    image: "ghcr.io/grovs-io/dashboard:3.0.0"
     restart: "unless-stopped"
     expose:
       - 3000

@@ -1,6 +1,6 @@
 # Marketplace submission packages
 
-These are maintainer packages for Grovs Community 2.3.1. They are not published
+These are maintainer packages for Grovs Community 3.0.0. They are not published
 catalog listings. Local validation does not establish that a deployment works on
 the provider. No paid servers were created for this work.
 

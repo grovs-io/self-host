@@ -17,7 +17,7 @@ source "digitalocean" "grovs" {
   region        = "fra1"
   size          = "s-4vcpu-8gb"
   ssh_username  = "root"
-  snapshot_name = "grovs-community-2.3.1-${formatdate("YYYYMMDDhhmm", timestamp())}"
+  snapshot_name = "grovs-community-3.0.0-${formatdate("YYYYMMDDhhmm", timestamp())}"
 }
 build {
   sources = ["source.digitalocean.grovs"]

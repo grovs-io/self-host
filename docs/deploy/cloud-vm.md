@@ -15,9 +15,9 @@ with your app domain and administrator email, and paste it into that field:
 runcmd:
   - |
     set -e
-    curl -fsSL -o /root/grovs-bootstrap.sh https://raw.githubusercontent.com/grovs-io/self-host/d9f291fb7a943adc8b712696342180ea63438cfd/deploy/vm/bootstrap.sh
+    curl -fsSL -o /root/grovs-bootstrap.sh https://raw.githubusercontent.com/grovs-io/self-host/579ef87ce3662471b14e079b194d26d8f6df529e/deploy/vm/bootstrap.sh
     echo "8371c66310080619effb5c757a5e259534ee9b6262c124ff38d5307339d5e64e  /root/grovs-bootstrap.sh" | sha256sum -c
-    GROVS_DOMAIN=grovs.example.com GROVS_ADMIN_EMAIL=admin@example.com GROVS_VERSION=2.3.1 GROVS_STACK_REF=d9f291fb7a943adc8b712696342180ea63438cfd bash /root/grovs-bootstrap.sh
+    GROVS_DOMAIN=grovs.example.com GROVS_ADMIN_EMAIL=admin@example.com GROVS_VERSION=3.0.0 GROVS_STACK_REF=579ef87ce3662471b14e079b194d26d8f6df529e bash /root/grovs-bootstrap.sh
 ```
 
 On first boot the server downloads the reviewed bootstrap script, checks its
@@ -38,7 +38,7 @@ If the server is already running, install over SSH instead.
 On the new server, download the reviewed bootstrap script and inspect it:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/d9f291fb7a943adc8b712696342180ea63438cfd/deploy/vm/bootstrap.sh \
+curl -fsSL https://raw.githubusercontent.com/grovs-io/self-host/579ef87ce3662471b14e079b194d26d8f6df529e/deploy/vm/bootstrap.sh \
   -o /tmp/grovs-bootstrap.sh
 less /tmp/grovs-bootstrap.sh
 ```
@@ -49,8 +49,8 @@ installation under `/opt/grovs`:
 ```bash
 sudo env GROVS_DOMAIN=grovs.example.com \
   GROVS_ADMIN_EMAIL=admin@example.com \
-  GROVS_VERSION=2.3.1 \
-  GROVS_STACK_REF=d9f291fb7a943adc8b712696342180ea63438cfd \
+  GROVS_VERSION=3.0.0 \
+  GROVS_STACK_REF=579ef87ce3662471b14e079b194d26d8f6df529e \
   bash /tmp/grovs-bootstrap.sh < /dev/null
 ```
 

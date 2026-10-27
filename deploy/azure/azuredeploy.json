@@ -54,14 +54,14 @@
     },
     "grovsVersion": {
       "type": "string",
-      "defaultValue": "2.3.1",
+      "defaultValue": "3.0.0",
       "metadata": {
         "description": "Published release shared by the backend and dashboard images."
       }
     },
     "stackRef": {
       "type": "string",
-      "defaultValue": "d9f291fb7a943adc8b712696342180ea63438cfd",
+      "defaultValue": "579ef87ce3662471b14e079b194d26d8f6df529e",
       "metadata": {
         "description": "Reviewed self-host Git commit containing the Compose stack. Keep pinned for repeatable installs."
       }

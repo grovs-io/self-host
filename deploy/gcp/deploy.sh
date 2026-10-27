@@ -11,7 +11,7 @@ if [[ "${1:-}" == --help ]]; then
 fi
 [[ $# -ge 4 && $# -le 5 ]] || { "$0" --help; exit 1; }
 PROJECT="$1"; ZONE="$2"; APP_DOMAIN="$3"; ADMIN_EMAIL="$4"
-VERSION="${5:-2.3.0}"; NAME="${GROVS_INSTANCE_NAME:-grovs}"
+VERSION="${5:-3.0.0}"; NAME="${GROVS_INSTANCE_NAME:-grovs}"
 STACK_REF="${GROVS_STACK_REF:-main}"
 [[ "$NAME" =~ ^[a-z][a-z0-9-]{0,40}$ && "$ZONE" =~ ^[a-z]+-[a-z0-9]+[0-9]-[a-z]$ ]] || {
   echo "Invalid instance name or zone." >&2; exit 1;

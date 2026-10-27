@@ -17,7 +17,7 @@ source "vultr" "grovs" {
   plan_id              = "vc2-4c-8gb"
   region_id            = "fra"
   ssh_username         = "root"
-  snapshot_description = "Grovs Community 2.3.1 ${formatdate("YYYYMMDDhhmm", timestamp())}"
+  snapshot_description = "Grovs Community 3.0.0 ${formatdate("YYYYMMDDhhmm", timestamp())}"
   state_timeout        = "25m"
 }
 build {

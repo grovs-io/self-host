@@ -1,7 +1,7 @@
 ---
 - name: Download the reviewed Grovs bootstrap
   ansible.builtin.get_url:
-    url: https://raw.githubusercontent.com/grovs-io/self-host/d9f291fb7a943adc8b712696342180ea63438cfd/deploy/vm/bootstrap.sh
+    url: https://raw.githubusercontent.com/grovs-io/self-host/579ef87ce3662471b14e079b194d26d8f6df529e/deploy/vm/bootstrap.sh
     dest: /root/grovs-bootstrap.sh
     mode: '0700'
     checksum: sha256:8371c66310080619effb5c757a5e259534ee9b6262c124ff38d5307339d5e64e
@@ -10,7 +10,7 @@
   environment:
     GROVS_DOMAIN: "{{ grovs_domain }}"
     GROVS_ADMIN_EMAIL: "{{ grovs_admin_email }}"
-    GROVS_VERSION: '2.3.1'
-    GROVS_STACK_REF: d9f291fb7a943adc8b712696342180ea63438cfd
+    GROVS_VERSION: '3.0.0'
+    GROVS_STACK_REF: 579ef87ce3662471b14e079b194d26d8f6df529e
   no_log: true
   changed_when: true

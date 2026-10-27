@@ -23,8 +23,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--domain", required=True, help="App base domain without a scheme or path")
     parser.add_argument("--email", required=True, help="First administrator's email")
-    parser.add_argument("--version", default="2.3.1", help="Published image release")
-    parser.add_argument("--stack-ref", default="d9f291fb7a943adc8b712696342180ea63438cfd", help="Reviewed self-host Git commit")
+    parser.add_argument("--version", default="3.0.0", help="Published image release")
+    parser.add_argument("--stack-ref", default="579ef87ce3662471b14e079b194d26d8f6df529e", help="Reviewed self-host Git commit")
     args = parser.parse_args()
     if not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z0-9-]+", args.domain) or args.domain.endswith("lvh.me"):
         parser.error("--domain must be a public hostname without a scheme, port or path")

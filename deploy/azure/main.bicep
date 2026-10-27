@@ -24,10 +24,10 @@ param adminUsername string = 'grovsadmin'
 param sshSourceCidr string
 
 @description('Published release shared by the backend and dashboard images.')
-param grovsVersion string = '2.3.1'
+param grovsVersion string = '3.0.0'
 
 @description('Reviewed self-host Git commit containing the Compose stack. Keep pinned for repeatable installs.')
-param stackRef string = 'd9f291fb7a943adc8b712696342180ea63438cfd'
+param stackRef string = '579ef87ce3662471b14e079b194d26d8f6df529e'
 
 @description('VM size; the default has 4 vCPUs and 16 GiB RAM. Availability depends on your region and quota.')
 @allowed([

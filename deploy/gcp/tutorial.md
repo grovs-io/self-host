@@ -17,7 +17,7 @@ In the terminal, change to the cloned `self-host` directory if needed. Replace
 the project, zone, domain and email below with your values:
 
 ```bash
-./deploy/gcp/deploy.sh YOUR_PROJECT_ID europe-west1-b example.com admin@example.com 2.3.0
+./deploy/gcp/deploy.sh YOUR_PROJECT_ID europe-west1-b example.com admin@example.com 3.0.0
 ```
 
 Review the resources shown by the script and confirm. It generates secrets on

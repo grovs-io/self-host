@@ -23,7 +23,7 @@ and [OS Login setup](https://cloud.google.com/compute/docs/oslogin/set-up-oslogi
 ```bash
 git clone https://github.com/grovs-io/self-host.git
 cd self-host
-./deploy/gcp/deploy.sh YOUR_PROJECT_ID europe-west1-b example.com admin@example.com 2.3.0
+./deploy/gcp/deploy.sh YOUR_PROJECT_ID europe-west1-b example.com admin@example.com 3.0.0
 ```
 
 The script shows the target project, zone and machine type before requesting

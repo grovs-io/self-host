@@ -6,6 +6,6 @@ if [[ $# != 2 ]]; then echo 'Usage: sudo grovs-setup grovs.example.com admin@exa
 [[ "$1" =~ ^[a-z0-9][a-z0-9.-]*\.[a-z0-9-]+$ && "$1" != *lvh.me ]] || { echo 'Enter a public domain without a scheme or path.' >&2; exit 1; }
 [[ "$2" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$ ]] || { echo 'Enter a valid administrator email.' >&2; exit 1; }
 export GROVS_DOMAIN="$1" GROVS_ADMIN_EMAIL="$2"
-export GROVS_VERSION=2.3.1
-export GROVS_STACK_REF=d9f291fb7a943adc8b712696342180ea63438cfd
+export GROVS_VERSION=3.0.0
+export GROVS_STACK_REF=579ef87ce3662471b14e079b194d26d8f6df529e
 exec bash /usr/local/lib/grovs/bootstrap.sh < /dev/null
